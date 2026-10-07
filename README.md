@@ -22,15 +22,15 @@ Calendário completo em [base-conhecimento/10-extensao-e-datas.md](base-conhecim
 | [`materiais/`](materiais/) | O que veio da faculdade: tema, requisitos, datas, orientação da extensão | Só adicionar, não editar |
 | `arquivo/` | Versões antigas e zips. Fica fora do Git | Ninguém precisa abrir |
 
-## Integrantes e responsabilidades
+## Integrantes
 
-| Nome | RA | Responsável por |
-| --- | --- | --- |
-| _a preencher_ | | API e banco |
-| _a preencher_ | | Web (Blazor) |
-| _a preencher_ | | Mobile (Flutter) |
-| _a preencher_ | | Trabalho escrito |
-| _a preencher_ | | Apresentação e oficina de extensão |
+| Nome | RA |
+| --- | --- |
+| _a preencher_ | |
+| _a preencher_ | |
+| _a preencher_ | |
+| _a preencher_ | |
+| _a preencher_ | |
 
 ## Como trabalhar
 
