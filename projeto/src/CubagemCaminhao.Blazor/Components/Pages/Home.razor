@@ -1,0 +1,471 @@
+@page "/"
+@inject IHttpClientFactory HttpClientFactory
+
+<PageTitle>CubagemCaminhao</PageTitle>
+
+<div class="d-flex flex-column gap-4">
+    <div class="d-flex justify-content-between align-items-center flex-wrap gap-3">
+        <div>
+            <h1 class="mb-1">Cubagem de caminhões</h1>
+            <p class="text-secondary mb-0">Cadastro de veículos e carga com cálculo automático de ocupação.</p>
+        </div>
+        <div class="badge bg-primary-subtle text-primary-emphasis px-3 py-2 rounded-pill fs-6">
+            @(isLoading ? "Carregando..." : $"{trucks.Count} caminhões")
+        </div>
+    </div>
+
+    @if (!string.IsNullOrWhiteSpace(errorMessage))
+    {
+        <div class="alert alert-danger" role="alert">
+            @errorMessage
+        </div>
+    }
+
+    <div class="row g-4">
+        <div class="col-lg-5">
+            <div class="card shadow-sm border-0 h-100">
+                <div class="card-body">
+                    <h2 class="h5 mb-3">Cadastrar caminhão</h2>
+
+                    <EditForm Model="truckForm" OnValidSubmit="HandleCreateTruckAsync">
+                        <DataAnnotationsValidator />
+
+                        <div class="mb-3">
+                            <label class="form-label">Nome</label>
+                            <InputText @bind-Value="truckForm.Name" class="form-control" />
+                            <ValidationMessage For="() => truckForm.Name" />
+                        </div>
+
+                        <div class="mb-3">
+                            <label class="form-label">Placa</label>
+                            <InputText @bind-Value="truckForm.Plate" class="form-control" maxlength="10" />
+                            <ValidationMessage For="() => truckForm.Plate" />
+                        </div>
+
+                        <div class="row g-2">
+                            <div class="col-md-4">
+                                <label class="form-label">Comprimento</label>
+                                <InputNumber @bind-Value="truckForm.LengthCm" class="form-control" />
+                            </div>
+                            <div class="col-md-4">
+                                <label class="form-label">Largura</label>
+                                <InputNumber @bind-Value="truckForm.WidthCm" class="form-control" />
+                            </div>
+                            <div class="col-md-4">
+                                <label class="form-label">Altura</label>
+                                <InputNumber @bind-Value="truckForm.HeightCm" class="form-control" />
+                            </div>
+                        </div>
+
+                        <button type="submit" class="btn btn-primary mt-3" disabled="@isSubmitting">
+                            @(isSubmitting ? "Salvando..." : "Salvar caminhão")
+                        </button>
+                    </EditForm>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-lg-7">
+            <div class="card shadow-sm border-0 h-100">
+                <div class="card-body">
+                    <h2 class="h5 mb-3">Resumo operacional</h2>
+
+                    <div class="row g-3">
+                        <div class="col-md-4">
+                            <div class="border rounded p-3 h-100">
+                                <div class="text-muted small">Total de caminhões</div>
+                                <div class="fs-3 fw-bold">@trucks.Count</div>
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <div class="border rounded p-3 h-100">
+                                <div class="text-muted small">Volume total</div>
+                                <div class="fs-3 fw-bold">@GetTotalVolumeM3().ToString("0.##") m³</div>
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <div class="border rounded p-3 h-100">
+                                <div class="text-muted small">Ocupação média</div>
+                                <div class="fs-3 fw-bold">@GetAverageOccupancy().ToString("0.##")%</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="card shadow-sm border-0">
+        <div class="card-body">
+            <div class="d-flex justify-content-between align-items-center mb-3">
+                <h2 class="h5 mb-0">Caminhões cadastrados</h2>
+                <button class="btn btn-outline-secondary btn-sm" @onclick="LoadTrucksAsync">Atualizar</button>
+            </div>
+
+            @if (isLoading)
+            {
+                <div class="text-secondary">Consultando a API de cubagem...</div>
+            }
+            else if (!trucks.Any())
+            {
+                <div class="text-secondary">Nenhum caminhão cadastrado ainda.</div>
+            }
+            else
+            {
+                <div class="accordion" id="truckAccordion">
+                    @foreach (var truck in trucks)
+                    {
+                                            var cargoForm = GetCargoForm(truck.Id);
+
+                                            <div class="accordion-item">
+                                                <h3 class="accordion-header">
+                                                    <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#truck-@truck.Id">
+                                                        <div class="d-flex justify-content-between align-items-center w-100 me-3">
+                                                            <span>
+                                                                <strong>@truck.Name</strong>
+                                                                <span class="text-muted ms-2">@truck.Plate</span>
+                                                            </span>
+                                                            <span class="badge @(truck.OccupancyPercent >= 80 ? "bg-danger" : truck.OccupancyPercent >= 60 ? "bg-warning text-dark" : "bg-success")">
+                                                                @truck.OccupancyPercent.ToString("0.0")% ocupado
+                                                            </span>
+                                                        </div>
+                                                    </button>
+                                                </h3>
+                                                <div id="truck-@truck.Id" class="accordion-collapse collapse" data-bs-parent="#truckAccordion">
+                                                    <div class="accordion-body">
+                                                        <div class="row g-3 mb-3">
+                                                            <div class="col-md-3">
+                                                                <div class="small text-muted">Dimensões</div>
+                                                                <div>@truck.LengthCm x @truck.WidthCm x @truck.HeightCm cm</div>
+                                                            </div>
+                                                            <div class="col-md-3">
+                                                                <div class="small text-muted">Volume do caminhão</div>
+                                                                <div>@truck.TruckVolumeM3.ToString("0.###") m³</div>
+                                                            </div>
+                                                            <div class="col-md-3">
+                                                                <div class="small text-muted">Carga atual</div>
+                                                                <div>@truck.CargoVolumeM3.ToString("0.###") m³</div>
+                                                            </div>
+                                                            <div class="col-md-3">
+                                                                <div class="small text-muted">Carga cadastrada</div>
+                                                                <div>@truck.CargoItems.Count itens</div>
+                                                            </div>
+                                                        </div>
+
+                                                        <div class="card bg-light-subtle border-0 mb-3">
+                                                            <div class="card-body">
+                                                                <h4 class="h6">Adicionar item à carga</h4>
+                                                                <EditForm Model="cargoForm" OnValidSubmit="() => HandleCreateCargoAsync(truck.Id)">
+                                                                    <div class="row g-2 align-items-end">
+                                                                        <div class="col-md-3">
+                                                                            <label class="form-label">Nome</label>
+                                                                            <InputText @bind-Value="cargoForm.Name" class="form-control" />
+                                                                        </div>
+                                                                        <div class="col-md-2">
+                                                                            <label class="form-label">Larg.</label>
+                                                                            <InputNumber @bind-Value="cargoForm.LengthCm" class="form-control" />
+                                                                        </div>
+                                                                        <div class="col-md-2">
+                                                                            <label class="form-label">Comp.</label>
+                                                                            <InputNumber @bind-Value="cargoForm.WidthCm" class="form-control" />
+                                                                        </div>
+                                                                        <div class="col-md-2">
+                                                                            <label class="form-label">Alt.</label>
+                                                                            <InputNumber @bind-Value="cargoForm.HeightCm" class="form-control" />
+                                                                        </div>
+                                                                        <div class="col-md-2">
+                                                                            <label class="form-label">Qtd.</label>
+                                                                            <InputNumber @bind-Value="cargoForm.Quantity" class="form-control" />
+                                                                        </div>
+                                                                        <div class="col-md-1 d-grid">
+                                                                            <button type="submit" class="btn btn-sm btn-primary" disabled="@isSubmitting">Add</button>
+                                                                        </div>
+                                                                    </div>
+                                                                </EditForm>
+                                                            </div>
+                                                        </div>
+
+                                    @if (truck.CargoItems.Any())
+                                    {
+                                        <table class="table table-sm align-middle">
+                                            <thead>
+                                                <tr>
+                                                    <th>Item</th>
+                                                    <th>Dimensões</th>
+                                                    <th>Qtd.</th>
+                                                    <th>Volume</th>
+                                                    <th></th>
+                                                </tr>
+                                            </thead>
+                                            <tbody>
+                                                @foreach (var cargo in truck.CargoItems)
+                                                {
+                                                    <tr>
+                                                        <td>@cargo.Name</td>
+                                                        <td>@cargo.LengthCm x @cargo.WidthCm x @cargo.HeightCm cm</td>
+                                                        <td>@cargo.Quantity</td>
+                                                        <td>@cargo.TotalVolumeM3.ToString("0.###") m³</td>
+                                                        <td>
+                                                            <button class="btn btn-link btn-sm text-danger p-0" @onclick="() => DeleteCargoAsync(truck.Id, cargo.Id)">
+                                                                Excluir
+                                                            </button>
+                                                        </td>
+                                                    </tr>
+                                                }
+                                            </tbody>
+                                        </table>
+                                    }
+                                    else
+                                    {
+                                        <div class="text-secondary">Nenhum item de carga cadastrado para este caminhão.</div>
+                                    }
+
+                                    <div class="d-flex justify-content-end mt-3">
+                                        <button class="btn btn-outline-danger btn-sm" @onclick="() => DeleteTruckAsync(truck.Id)">Excluir caminhão</button>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    }
+                </div>
+            }
+        </div>
+    </div>
+</div>
+
+@code {
+    private readonly List<TruckDto> trucks = [];
+    private readonly Dictionary<int, CargoForm> truckCargoForms = [];
+    private readonly TruckForm truckForm = new();
+    private bool isLoading;
+    private bool isSubmitting;
+    private string? errorMessage;
+
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadTrucksAsync();
+    }
+
+    private async Task LoadTrucksAsync()
+    {
+        isLoading = true;
+        errorMessage = null;
+
+        try
+        {
+            using var http = HttpClientFactory.CreateClient("CubagemApi");
+            var response = await http.GetFromJsonAsync<List<TruckDto>>("/api/trucks/");
+            trucks.Clear();
+            if (response is not null)
+            {
+                foreach (var truck in response)
+                {
+                    trucks.Add(truck);
+                    truckCargoForms[truck.Id] = new CargoForm();
+                }
+            }
+        }
+        catch (Exception ex)
+        {
+            errorMessage = $"Não foi possível carregar os caminhões: {ex.Message}";
+        }
+        finally
+        {
+            isLoading = false;
+        }
+    }
+
+    private async Task HandleCreateTruckAsync()
+    {
+        isSubmitting = true;
+        errorMessage = null;
+
+        try
+        {
+            using var http = HttpClientFactory.CreateClient("CubagemApi");
+            var payload = new
+            {
+                Name = truckForm.Name,
+                Plate = truckForm.Plate,
+                LengthCm = truckForm.LengthCm,
+                WidthCm = truckForm.WidthCm,
+                HeightCm = truckForm.HeightCm
+            };
+
+            var response = await http.PostAsJsonAsync("/api/trucks/", payload);
+            if (!response.IsSuccessStatusCode)
+            {
+                var message = await response.Content.ReadAsStringAsync();
+                throw new InvalidOperationException(message);
+            }
+
+            truckForm.Reset();
+            await LoadTrucksAsync();
+        }
+        catch (Exception ex)
+        {
+            errorMessage = ex.Message;
+        }
+        finally
+        {
+            isSubmitting = false;
+        }
+    }
+
+    private async Task HandleCreateCargoAsync(int truckId)
+    {
+        if (!truckCargoForms.TryGetValue(truckId, out var cargoForm))
+        {
+            cargoForm = new CargoForm();
+            truckCargoForms[truckId] = cargoForm;
+        }
+
+        isSubmitting = true;
+        errorMessage = null;
+
+        try
+        {
+            using var http = HttpClientFactory.CreateClient("CubagemApi");
+            var payload = new
+            {
+                Name = cargoForm.Name,
+                LengthCm = cargoForm.LengthCm,
+                WidthCm = cargoForm.WidthCm,
+                HeightCm = cargoForm.HeightCm,
+                Quantity = cargoForm.Quantity
+            };
+
+            var response = await http.PostAsJsonAsync($"/api/trucks/{truckId}/cargo", payload);
+            if (!response.IsSuccessStatusCode)
+            {
+                var message = await response.Content.ReadAsStringAsync();
+                throw new InvalidOperationException(message);
+            }
+
+            cargoForm.Reset();
+            await LoadTrucksAsync();
+        }
+        catch (Exception ex)
+        {
+            errorMessage = ex.Message;
+        }
+        finally
+        {
+            isSubmitting = false;
+        }
+    }
+
+    private CargoForm GetCargoForm(int truckId)
+    {
+        if (!truckCargoForms.TryGetValue(truckId, out var form))
+        {
+            form = new CargoForm();
+            truckCargoForms[truckId] = form;
+        }
+
+        return form;
+    }
+
+    private async Task DeleteTruckAsync(int truckId)
+    {
+        try
+        {
+            using var http = HttpClientFactory.CreateClient("CubagemApi");
+            var response = await http.DeleteAsync($"/api/trucks/{truckId}");
+            if (!response.IsSuccessStatusCode)
+            {
+                throw new InvalidOperationException(await response.Content.ReadAsStringAsync());
+            }
+
+            await LoadTrucksAsync();
+        }
+        catch (Exception ex)
+        {
+            errorMessage = ex.Message;
+        }
+    }
+
+    private async Task DeleteCargoAsync(int truckId, int cargoId)
+    {
+        try
+        {
+            using var http = HttpClientFactory.CreateClient("CubagemApi");
+            var response = await http.DeleteAsync($"/api/trucks/{truckId}/cargo/{cargoId}");
+            if (!response.IsSuccessStatusCode)
+            {
+                throw new InvalidOperationException(await response.Content.ReadAsStringAsync());
+            }
+
+            await LoadTrucksAsync();
+        }
+        catch (Exception ex)
+        {
+            errorMessage = ex.Message;
+        }
+    }
+
+    private decimal GetTotalVolumeM3() => trucks.Sum(t => t.CargoVolumeM3);
+
+    private decimal GetAverageOccupancy() => trucks.Any() ? trucks.Average(t => t.OccupancyPercent) : 0m;
+
+    private sealed class TruckForm
+    {
+        public string? Name { get; set; }
+        public string? Plate { get; set; }
+        public decimal LengthCm { get; set; } = 500m;
+        public decimal WidthCm { get; set; } = 220m;
+        public decimal HeightCm { get; set; } = 240m;
+
+        public void Reset()
+        {
+            Name = string.Empty;
+            Plate = string.Empty;
+            LengthCm = 500m;
+            WidthCm = 220m;
+            HeightCm = 240m;
+        }
+    }
+
+    private sealed class CargoForm
+    {
+        public string? Name { get; set; }
+        public decimal LengthCm { get; set; } = 100m;
+        public decimal WidthCm { get; set; } = 100m;
+        public decimal HeightCm { get; set; } = 100m;
+        public int Quantity { get; set; } = 1;
+
+        public void Reset()
+        {
+            Name = string.Empty;
+            LengthCm = 100m;
+            WidthCm = 100m;
+            HeightCm = 100m;
+            Quantity = 1;
+        }
+    }
+
+    private sealed class TruckDto
+    {
+        public int Id { get; set; }
+        public string Name { get; set; } = string.Empty;
+        public string Plate { get; set; } = string.Empty;
+        public decimal LengthCm { get; set; }
+        public decimal WidthCm { get; set; }
+        public decimal HeightCm { get; set; }
+        public decimal TruckVolumeM3 { get; set; }
+        public decimal CargoVolumeM3 { get; set; }
+        public decimal OccupancyPercent { get; set; }
+        public List<CargoDto> CargoItems { get; set; } = [];
+    }
+
+    private sealed class CargoDto
+    {
+        public int Id { get; set; }
+        public string Name { get; set; } = string.Empty;
+        public decimal LengthCm { get; set; }
+        public decimal WidthCm { get; set; }
+        public decimal HeightCm { get; set; }
+        public int Quantity { get; set; }
+        public decimal TotalVolumeM3 { get; set; }
+    }
+}

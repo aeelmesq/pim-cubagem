@@ -1,0 +1,17 @@
+# Zips e versões antigas
+arquivo/
+*.zip
+
+# Segredos
+.env
+
+# Vídeos e mídia pesada (ficam na pasta compartilhada)
+*.mp4
+*.mov
+*.mkv
+
+# Regras do código ficam em projeto/.gitignore
+
+# OS
+.DS_Store
+Thumbs.db

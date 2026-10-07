@@ -1,0 +1,8 @@
+<Solution>
+  <Folder Name="/src/">
+    <Project Path="src/CubagemCaminhao.Api/CubagemCaminhao.Api.csproj" />
+    <Project Path="src/CubagemCaminhao.Blazor/CubagemCaminhao.Blazor.csproj" />
+    <Project Path="src/CubagemCaminhao.Domain/CubagemCaminhao.Domain.csproj" />
+    <Project Path="src/CubagemCaminhao.Infrastructure/CubagemCaminhao.Infrastructure.csproj" />
+  </Folder>
+</Solution>

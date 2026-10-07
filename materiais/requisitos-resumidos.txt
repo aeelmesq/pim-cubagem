@@ -1,0 +1,7 @@
+Web - Blazor
+Mobile - Flutter
+API - Dotnet
+Banco - SQL Server
+
+web e api = c#
+precisa ter api, banco dentro do docker

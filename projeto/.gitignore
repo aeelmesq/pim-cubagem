@@ -1,0 +1,29 @@
+# .NET
+bin/
+obj/
+*.user
+*.suo
+*.cache
+*.pdb
+*.dll
+*.exe
+*.apphost
+
+# Flutter/Dart
+.dart_tool/
+.packages
+.pub-cache/
+.pub/
+build/
+.flutter-plugins
+.flutter-plugins-dependencies
+.idea/
+.vscode/
+*.iml
+
+# Docker
+.docker/
+
+# OS
+.DS_Store
+Thumbs.db
