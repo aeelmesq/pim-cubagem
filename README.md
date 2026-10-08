@@ -26,11 +26,11 @@ Calendário completo em [base-conhecimento/10-extensao-e-datas.md](base-conhecim
 
 | Nome | RA |
 | --- | --- |
-| _a preencher_ | |
-| _a preencher_ | |
-| _a preencher_ | |
-| _a preencher_ | |
-| _a preencher_ | |
+| Julio Antunes Santos de Oliveira | R1939E6 |
+| Karen da Silva Matos | R6871D2 |
+| Klaus Espírito Santo Oliveira | R8132A0 |
+| João Paulo Martins Almeida | H759GJ3 |
+| Alexandre Mesquita de Oliveira | F3620E7 |
 
 ## Como trabalhar
 
