@@ -1,0 +1,238 @@
+@page "/caminhoes"
+@inject IHttpClientFactory HttpClientFactory
+
+<PageTitle>Caminhões</PageTitle>
+
+<div class="d-flex flex-column gap-4">
+    <div>
+        <h1 class="mb-1">Caminhões</h1>
+        <p class="text-secondary mb-0">Cadastro dos veículos com as medidas internas do baú, em centímetros.</p>
+    </div>
+
+    @if (!string.IsNullOrWhiteSpace(errorMessage))
+    {
+        <div class="alert alert-danger" role="alert">
+            @errorMessage
+        </div>
+    }
+
+    @if (!string.IsNullOrWhiteSpace(successMessage))
+    {
+        <div class="alert alert-success" role="alert">
+            @successMessage
+        </div>
+    }
+
+    <div class="row g-4">
+        <div class="col-lg-5">
+            <div class="card shadow-sm border-0 h-100">
+                <div class="card-body">
+                    <h2 class="h5 mb-3">Cadastrar caminhão</h2>
+
+                    <EditForm Model="truckForm" OnValidSubmit="HandleCreateTruckAsync">
+                        <DataAnnotationsValidator />
+
+                        <div class="mb-3">
+                            <label class="form-label">Nome</label>
+                            <InputText @bind-Value="truckForm.Name" class="form-control" />
+                            <ValidationMessage For="() => truckForm.Name" />
+                        </div>
+
+                        <div class="mb-3">
+                            <label class="form-label">Placa</label>
+                            <InputText @bind-Value="truckForm.Plate" class="form-control" maxlength="10" />
+                            <ValidationMessage For="() => truckForm.Plate" />
+                        </div>
+
+                        <div class="row g-2">
+                            <div class="col-md-4">
+                                <label class="form-label">Comprimento (cm)</label>
+                                <InputNumber @bind-Value="truckForm.LengthCm" class="form-control" />
+                            </div>
+                            <div class="col-md-4">
+                                <label class="form-label">Largura (cm)</label>
+                                <InputNumber @bind-Value="truckForm.WidthCm" class="form-control" />
+                            </div>
+                            <div class="col-md-4">
+                                <label class="form-label">Altura (cm)</label>
+                                <InputNumber @bind-Value="truckForm.HeightCm" class="form-control" />
+                            </div>
+                        </div>
+
+                        <button type="submit" class="btn btn-primary mt-3" disabled="@isSubmitting">
+                            @(isSubmitting ? "Salvando..." : "Salvar caminhão")
+                        </button>
+                    </EditForm>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-lg-7">
+            <div class="card shadow-sm border-0 h-100">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-center mb-3">
+                        <h2 class="h5 mb-0">Caminhões cadastrados</h2>
+                        <button class="btn btn-outline-secondary btn-sm" @onclick="LoadTrucksAsync">Atualizar</button>
+                    </div>
+
+                    @if (isLoading)
+                    {
+                        <div class="text-secondary">Consultando a API de cubagem...</div>
+                    }
+                    else if (!trucks.Any())
+                    {
+                        <div class="text-secondary">Nenhum caminhão cadastrado ainda.</div>
+                    }
+                    else
+                    {
+                        <table class="table table-sm align-middle">
+                            <thead>
+                                <tr>
+                                    <th>Nome</th>
+                                    <th>Placa</th>
+                                    <th>Baú (C x L x A)</th>
+                                    <th>Volume</th>
+                                    <th></th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                @foreach (var truck in trucks)
+                                {
+                                    <tr>
+                                        <td>@truck.Name</td>
+                                        <td>@truck.Plate</td>
+                                        <td>@truck.LengthCm x @truck.WidthCm x @truck.HeightCm cm</td>
+                                        <td>@truck.TruckVolumeM3.ToString("0.###") m³</td>
+                                        <td class="text-end">
+                                            <button class="btn btn-link btn-sm text-danger p-0" @onclick="() => DeleteTruckAsync(truck.Id)">
+                                                Excluir
+                                            </button>
+                                        </td>
+                                    </tr>
+                                }
+                            </tbody>
+                        </table>
+                    }
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+@code {
+    private readonly List<TruckDto> trucks = [];
+    private readonly TruckForm truckForm = new();
+    private bool isLoading;
+    private bool isSubmitting;
+    private string? errorMessage;
+    private string? successMessage;
+
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadTrucksAsync();
+    }
+
+    private async Task LoadTrucksAsync()
+    {
+        isLoading = true;
+        errorMessage = null;
+
+        try
+        {
+            using var http = HttpClientFactory.CreateClient("CubagemApi");
+            var response = await http.GetFromJsonAsync<List<TruckDto>>("/api/trucks/");
+            trucks.Clear();
+            if (response is not null)
+            {
+                trucks.AddRange(response);
+            }
+        }
+        catch (Exception ex)
+        {
+            errorMessage = $"Não foi possível carregar os caminhões: {ex.Message}";
+        }
+        finally
+        {
+            isLoading = false;
+        }
+    }
+
+    private async Task HandleCreateTruckAsync()
+    {
+        isSubmitting = true;
+        errorMessage = null;
+        successMessage = null;
+
+        try
+        {
+            using var http = HttpClientFactory.CreateClient("CubagemApi");
+            var payload = new
+            {
+                Name = truckForm.Name,
+                Plate = truckForm.Plate,
+                LengthCm = truckForm.LengthCm,
+                WidthCm = truckForm.WidthCm,
+                HeightCm = truckForm.HeightCm
+            };
+
+            var response = await http.PostAsJsonAsync("/api/trucks/", payload);
+            if (!response.IsSuccessStatusCode)
+            {
+                var message = await response.Content.ReadAsStringAsync();
+                throw new InvalidOperationException(message);
+            }
+
+            successMessage = $"Caminhão {truckForm.Name} cadastrado.";
+            truckForm.Reset();
+            await LoadTrucksAsync();
+        }
+        catch (Exception ex)
+        {
+            errorMessage = ex.Message;
+        }
+        finally
+        {
+            isSubmitting = false;
+        }
+    }
+
+    private async Task DeleteTruckAsync(int truckId)
+    {
+        errorMessage = null;
+        successMessage = null;
+
+        try
+        {
+            using var http = HttpClientFactory.CreateClient("CubagemApi");
+            var response = await http.DeleteAsync($"/api/trucks/{truckId}");
+            if (!response.IsSuccessStatusCode)
+            {
+                throw new InvalidOperationException(await response.Content.ReadAsStringAsync());
+            }
+
+            await LoadTrucksAsync();
+        }
+        catch (Exception ex)
+        {
+            errorMessage = ex.Message;
+        }
+    }
+
+    private sealed class TruckForm
+    {
+        public string? Name { get; set; }
+        public string? Plate { get; set; }
+        public decimal LengthCm { get; set; } = 500m;
+        public decimal WidthCm { get; set; } = 220m;
+        public decimal HeightCm { get; set; } = 240m;
+
+        public void Reset()
+        {
+            Name = string.Empty;
+            Plate = string.Empty;
+            LengthCm = 500m;
+            WidthCm = 220m;
+            HeightCm = 240m;
+        }
+    }
+}

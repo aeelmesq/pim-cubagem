@@ -21,74 +21,27 @@
         </div>
     }
 
-    <div class="row g-4">
-        <div class="col-lg-5">
-            <div class="card shadow-sm border-0 h-100">
-                <div class="card-body">
-                    <h2 class="h5 mb-3">Cadastrar caminhão</h2>
+    <div class="card shadow-sm border-0">
+        <div class="card-body">
+            <h2 class="h5 mb-3">Resumo operacional</h2>
 
-                    <EditForm Model="truckForm" OnValidSubmit="HandleCreateTruckAsync">
-                        <DataAnnotationsValidator />
-
-                        <div class="mb-3">
-                            <label class="form-label">Nome</label>
-                            <InputText @bind-Value="truckForm.Name" class="form-control" />
-                            <ValidationMessage For="() => truckForm.Name" />
-                        </div>
-
-                        <div class="mb-3">
-                            <label class="form-label">Placa</label>
-                            <InputText @bind-Value="truckForm.Plate" class="form-control" maxlength="10" />
-                            <ValidationMessage For="() => truckForm.Plate" />
-                        </div>
-
-                        <div class="row g-2">
-                            <div class="col-md-4">
-                                <label class="form-label">Comprimento</label>
-                                <InputNumber @bind-Value="truckForm.LengthCm" class="form-control" />
-                            </div>
-                            <div class="col-md-4">
-                                <label class="form-label">Largura</label>
-                                <InputNumber @bind-Value="truckForm.WidthCm" class="form-control" />
-                            </div>
-                            <div class="col-md-4">
-                                <label class="form-label">Altura</label>
-                                <InputNumber @bind-Value="truckForm.HeightCm" class="form-control" />
-                            </div>
-                        </div>
-
-                        <button type="submit" class="btn btn-primary mt-3" disabled="@isSubmitting">
-                            @(isSubmitting ? "Salvando..." : "Salvar caminhão")
-                        </button>
-                    </EditForm>
+            <div class="row g-3">
+                <div class="col-md-4">
+                    <div class="border rounded p-3 h-100">
+                        <div class="text-muted small">Total de caminhões</div>
+                        <div class="fs-3 fw-bold">@trucks.Count</div>
+                    </div>
                 </div>
-            </div>
-        </div>
-
-        <div class="col-lg-7">
-            <div class="card shadow-sm border-0 h-100">
-                <div class="card-body">
-                    <h2 class="h5 mb-3">Resumo operacional</h2>
-
-                    <div class="row g-3">
-                        <div class="col-md-4">
-                            <div class="border rounded p-3 h-100">
-                                <div class="text-muted small">Total de caminhões</div>
-                                <div class="fs-3 fw-bold">@trucks.Count</div>
-                            </div>
-                        </div>
-                        <div class="col-md-4">
-                            <div class="border rounded p-3 h-100">
-                                <div class="text-muted small">Volume total</div>
-                                <div class="fs-3 fw-bold">@GetTotalVolumeM3().ToString("0.##") m³</div>
-                            </div>
-                        </div>
-                        <div class="col-md-4">
-                            <div class="border rounded p-3 h-100">
-                                <div class="text-muted small">Ocupação média</div>
-                                <div class="fs-3 fw-bold">@GetAverageOccupancy().ToString("0.##")%</div>
-                            </div>
-                        </div>
+                <div class="col-md-4">
+                    <div class="border rounded p-3 h-100">
+                        <div class="text-muted small">Volume total</div>
+                        <div class="fs-3 fw-bold">@GetTotalVolumeM3().ToString("0.##") m³</div>
+                    </div>
+                </div>
+                <div class="col-md-4">
+                    <div class="border rounded p-3 h-100">
+                        <div class="text-muted small">Ocupação média</div>
+                        <div class="fs-3 fw-bold">@GetAverageOccupancy().ToString("0.##")%</div>
                     </div>
                 </div>
             </div>
@@ -108,7 +61,9 @@
             }
             else if (!trucks.Any())
             {
-                <div class="text-secondary">Nenhum caminhão cadastrado ainda.</div>
+                <div class="text-secondary">
+                    Nenhum caminhão cadastrado ainda. <a href="caminhoes">Cadastrar caminhão</a>
+                </div>
             }
             else
             {
@@ -162,11 +117,11 @@
                                                                             <InputText @bind-Value="cargoForm.Name" class="form-control" />
                                                                         </div>
                                                                         <div class="col-md-2">
-                                                                            <label class="form-label">Larg.</label>
+                                                                            <label class="form-label">Comp.</label>
                                                                             <InputNumber @bind-Value="cargoForm.LengthCm" class="form-control" />
                                                                         </div>
                                                                         <div class="col-md-2">
-                                                                            <label class="form-label">Comp.</label>
+                                                                            <label class="form-label">Larg.</label>
                                                                             <InputNumber @bind-Value="cargoForm.WidthCm" class="form-control" />
                                                                         </div>
                                                                         <div class="col-md-2">
@@ -236,7 +191,6 @@
 @code {
     private readonly List<TruckDto> trucks = [];
     private readonly Dictionary<int, CargoForm> truckCargoForms = [];
-    private readonly TruckForm truckForm = new();
     private bool isLoading;
     private bool isSubmitting;
     private string? errorMessage;
@@ -272,43 +226,6 @@
         finally
         {
             isLoading = false;
-        }
-    }
-
-    private async Task HandleCreateTruckAsync()
-    {
-        isSubmitting = true;
-        errorMessage = null;
-
-        try
-        {
-            using var http = HttpClientFactory.CreateClient("CubagemApi");
-            var payload = new
-            {
-                Name = truckForm.Name,
-                Plate = truckForm.Plate,
-                LengthCm = truckForm.LengthCm,
-                WidthCm = truckForm.WidthCm,
-                HeightCm = truckForm.HeightCm
-            };
-
-            var response = await http.PostAsJsonAsync("/api/trucks/", payload);
-            if (!response.IsSuccessStatusCode)
-            {
-                var message = await response.Content.ReadAsStringAsync();
-                throw new InvalidOperationException(message);
-            }
-
-            truckForm.Reset();
-            await LoadTrucksAsync();
-        }
-        catch (Exception ex)
-        {
-            errorMessage = ex.Message;
-        }
-        finally
-        {
-            isSubmitting = false;
         }
     }
 
@@ -408,24 +325,6 @@
 
     private decimal GetAverageOccupancy() => trucks.Any() ? trucks.Average(t => t.OccupancyPercent) : 0m;
 
-    private sealed class TruckForm
-    {
-        public string? Name { get; set; }
-        public string? Plate { get; set; }
-        public decimal LengthCm { get; set; } = 500m;
-        public decimal WidthCm { get; set; } = 220m;
-        public decimal HeightCm { get; set; } = 240m;
-
-        public void Reset()
-        {
-            Name = string.Empty;
-            Plate = string.Empty;
-            LengthCm = 500m;
-            WidthCm = 220m;
-            HeightCm = 240m;
-        }
-    }
-
     private sealed class CargoForm
     {
         public string? Name { get; set; }
@@ -442,30 +341,5 @@
             HeightCm = 100m;
             Quantity = 1;
         }
-    }
-
-    private sealed class TruckDto
-    {
-        public int Id { get; set; }
-        public string Name { get; set; } = string.Empty;
-        public string Plate { get; set; } = string.Empty;
-        public decimal LengthCm { get; set; }
-        public decimal WidthCm { get; set; }
-        public decimal HeightCm { get; set; }
-        public decimal TruckVolumeM3 { get; set; }
-        public decimal CargoVolumeM3 { get; set; }
-        public decimal OccupancyPercent { get; set; }
-        public List<CargoDto> CargoItems { get; set; } = [];
-    }
-
-    private sealed class CargoDto
-    {
-        public int Id { get; set; }
-        public string Name { get; set; } = string.Empty;
-        public decimal LengthCm { get; set; }
-        public decimal WidthCm { get; set; }
-        public decimal HeightCm { get; set; }
-        public int Quantity { get; set; }
-        public decimal TotalVolumeM3 { get; set; }
     }
 }
