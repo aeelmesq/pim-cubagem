@@ -4,7 +4,7 @@ Ordem sugerida até a postagem (26/10 a 14/11/2026). Primeiro o que faz o sistem
 
 ## Etapa 1 — Arrumar a base (até ~12/10)
 
-- [ ] Corrigir a porta do Blazor para a API do Docker (8080).
+- [x] Corrigir a porta do Blazor para a API do Docker (8080).
 - [x] Remover `Counter` e `Weather` do Blazor e ajustar o título do menu.
 - [ ] Remover `WeatherForecast.cs` da API.
 - [ ] Trocar `EnsureCreatedAsync()` por migrations.

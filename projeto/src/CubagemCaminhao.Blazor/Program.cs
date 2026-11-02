@@ -4,7 +4,7 @@ var builder = WebApplication.CreateBuilder(args);
 
 builder.Services.AddHttpClient("CubagemApi", client =>
 {
-    var baseUrl = builder.Configuration["ApiBaseUrl"] ?? "http://localhost:5242";
+    var baseUrl = builder.Configuration["ApiBaseUrl"] ?? "http://localhost:8080";
     client.BaseAddress = new Uri(baseUrl);
 });
 

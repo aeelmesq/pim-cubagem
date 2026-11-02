@@ -14,7 +14,7 @@ Revisão de 07/10/2026, feita sobre `PIM_IV.zip` (hoje extraído em `projeto/`).
 
 | # | Problema | Onde | Gravidade |
 | --- | --- | --- | --- |
-| 1 | Blazor aponta para a porta 5242; com a API no Docker deveria ser 8080 | `src/CubagemCaminhao.Blazor/appsettings.json` | Alta: a web não conversa com a API do Docker |
+| 1 | ~~Blazor apontava para a porta 5242; com a API no Docker deveria ser 8080~~ Corrigido | `src/CubagemCaminhao.Blazor/appsettings.json` | — |
 | 2 | Cálculo só soma volumes: não confere se o item cabe nas medidas, não tem peso, aceita ocupação acima de 100% sem alerta | `Endpoints/TruckEndpoints.cs` | Alta: é o coração do tema |
 | 3 | Carga ligada direto ao caminhão, sem "carregamento" | `Domain/Entities` | Média |
 | 4 | Banco criado com `EnsureCreatedAsync()`, sem migrations | `Api/Program.cs` | Média |

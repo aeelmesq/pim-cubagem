@@ -53,4 +53,4 @@ Sugestão: mover as contas (volume, ocupação, peso cubado, "cabe?") de `TruckE
 | `dotnet run` | `http://localhost:5242` |
 | Emulador Android acessando a máquina | `http://10.0.2.2:8080` |
 
-O Blazor hoje aponta para `5242`. Se a API estiver no Docker, precisa ser `8080` (veja [Estado atual](08-estado-atual.md)).
+O Blazor aponta para `8080` (API no Docker). Para usar a API com `dotnet run`, troque `ApiBaseUrl` no `appsettings.json` do Blazor para `http://localhost:5242`.
