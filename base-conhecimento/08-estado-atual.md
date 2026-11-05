@@ -5,7 +5,9 @@ Revisão de 07/10/2026, feita sobre `PIM_IV.zip` (hoje extraído em `projeto/`).
 ## O que funciona
 
 - **API**: cadastro e exclusão de caminhões e itens de carga. Valida nome, placa única e medidas. Calcula volume do caminhão, volume da carga e ocupação (%).
-- **Banco**: tabelas `Trucks` e `CargoItems`, criadas quando a API sobe.
+- **Motoristas**: cadastro só com o nome (API `/api/drivers` e página `/motoristas`). Cada caminhão pode ter um motorista, escolhido no cadastro ou trocado na lista de `/caminhoes`.
+- **Situação da carga**: `CubageCalculator` (Domain) devolve OK / Atenção / Excede pelo volume; web e mobile só mostram a cor.
+- **Banco**: tabelas `Trucks`, `CargoItems` e `Drivers`, criadas quando a API sobe.
 - **Blazor**: página inicial (`Home.razor`) com resumo (total de caminhões, volume, ocupação média) e cargas por caminhão; página `/caminhoes` (`Trucks.razor`) com cadastro, lista e exclusão de caminhões. Chama a API.
 - **Flutter**: uma tela (`truck_dashboard_screen.dart`) com as mesmas funções, cliente HTTP (`truck_api.dart`) e testes.
 - **Docker**: `docker-compose.yml` sobe SQL Server e API na porta 8080.

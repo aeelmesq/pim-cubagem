@@ -1,0 +1,205 @@
+@page "/motoristas"
+@using System.ComponentModel.DataAnnotations
+@inject IHttpClientFactory HttpClientFactory
+@inject IJSRuntime JS
+
+<PageTitle>Motoristas</PageTitle>
+
+<div class="d-flex flex-column gap-4">
+    <div>
+        <h1 class="mb-1">Motoristas</h1>
+        <p class="text-secondary mb-0">
+            O sistema guarda só o nome do motorista. CPF, CNH e telefone não são pedidos porque o sistema não precisa deles (LGPD).
+        </p>
+    </div>
+
+    @if (!string.IsNullOrWhiteSpace(errorMessage))
+    {
+        <div class="alert alert-danger" role="alert">
+            @errorMessage
+        </div>
+    }
+
+    @if (!string.IsNullOrWhiteSpace(successMessage))
+    {
+        <div class="alert alert-success" role="alert">
+            @successMessage
+        </div>
+    }
+
+    <div class="row g-4">
+        <div class="col-lg-5">
+            <div class="card shadow-sm border-0 h-100">
+                <div class="card-body">
+                    <h2 class="h5 mb-3">Cadastrar motorista</h2>
+
+                    <EditForm Model="driverForm" OnValidSubmit="HandleCreateDriverAsync">
+                        <DataAnnotationsValidator />
+
+                        <div class="mb-3">
+                            <label class="form-label">Nome</label>
+                            <InputText @bind-Value="driverForm.Name" class="form-control" />
+                            <ValidationMessage For="() => driverForm.Name" />
+                        </div>
+
+                        <button type="submit" class="btn btn-primary" disabled="@isSubmitting">
+                            @(isSubmitting ? "Salvando..." : "Salvar motorista")
+                        </button>
+                    </EditForm>
+
+                    <p class="form-text mt-3 mb-0">Para colocar o motorista num caminhão, use a página <a href="caminhoes">Caminhões</a>.</p>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-lg-7">
+            <div class="card shadow-sm border-0 h-100">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-center mb-3">
+                        <h2 class="h5 mb-0">Motoristas cadastrados</h2>
+                        <button class="btn btn-outline-secondary btn-sm" @onclick="LoadDriversAsync">Atualizar</button>
+                    </div>
+
+                    @if (isLoading)
+                    {
+                        <div class="text-secondary">Consultando a API de cubagem...</div>
+                    }
+                    else if (!drivers.Any())
+                    {
+                        <div class="text-secondary">Nenhum motorista cadastrado ainda.</div>
+                    }
+                    else
+                    {
+                        <table class="table table-sm align-middle">
+                            <thead>
+                                <tr>
+                                    <th>Nome</th>
+                                    <th>Caminhão</th>
+                                    <th></th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                @foreach (var driver in drivers)
+                                {
+                                    <tr>
+                                        <td>@driver.Name</td>
+                                        <td>@(driver.TruckPlate ?? "Sem caminhão")</td>
+                                        <td class="text-end">
+                                            <button class="btn btn-link btn-sm text-danger p-0" @onclick="() => DeleteDriverAsync(driver)">
+                                                Excluir
+                                            </button>
+                                        </td>
+                                    </tr>
+                                }
+                            </tbody>
+                        </table>
+                    }
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+@code {
+    private readonly List<DriverDto> drivers = [];
+    private readonly DriverForm driverForm = new();
+    private bool isLoading;
+    private bool isSubmitting;
+    private string? errorMessage;
+    private string? successMessage;
+
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadDriversAsync();
+    }
+
+    private async Task LoadDriversAsync()
+    {
+        isLoading = true;
+        errorMessage = null;
+
+        try
+        {
+            using var http = HttpClientFactory.CreateClient("CubagemApi");
+            var response = await http.GetFromJsonAsync<List<DriverDto>>("/api/drivers/");
+            drivers.Clear();
+            drivers.AddRange(response ?? []);
+        }
+        catch (Exception)
+        {
+            errorMessage = ApiException.ConnectionError;
+        }
+        finally
+        {
+            isLoading = false;
+        }
+    }
+
+    private async Task HandleCreateDriverAsync()
+    {
+        isSubmitting = true;
+        errorMessage = null;
+        successMessage = null;
+
+        try
+        {
+            using var http = HttpClientFactory.CreateClient("CubagemApi");
+            var response = await http.PostAsJsonAsync("/api/drivers/", new { Name = driverForm.Name });
+            await ApiException.EnsureSuccessAsync(response);
+
+            successMessage = $"Motorista {driverForm.Name} cadastrado.";
+            driverForm.Name = string.Empty;
+            await LoadDriversAsync();
+        }
+        catch (ApiException ex)
+        {
+            errorMessage = ex.Message;
+        }
+        catch (Exception)
+        {
+            errorMessage = ApiException.ConnectionError;
+        }
+        finally
+        {
+            isSubmitting = false;
+        }
+    }
+
+    private async Task DeleteDriverAsync(DriverDto driver)
+    {
+        var question = driver.TruckPlate is null
+            ? $"Excluir o motorista {driver.Name}?"
+            : $"Excluir o motorista {driver.Name}? O caminhão {driver.TruckPlate} vai ficar sem motorista.";
+        if (!await JS.InvokeAsync<bool>("confirm", question))
+        {
+            return;
+        }
+
+        errorMessage = null;
+        successMessage = null;
+
+        try
+        {
+            using var http = HttpClientFactory.CreateClient("CubagemApi");
+            var response = await http.DeleteAsync($"/api/drivers/{driver.Id}");
+            await ApiException.EnsureSuccessAsync(response);
+
+            await LoadDriversAsync();
+        }
+        catch (ApiException ex)
+        {
+            errorMessage = ex.Message;
+        }
+        catch (Exception)
+        {
+            errorMessage = ApiException.ConnectionError;
+        }
+    }
+
+    private sealed class DriverForm
+    {
+        [Required(ErrorMessage = "Informe o nome.")]
+        [StringLength(120, ErrorMessage = "O nome pode ter até 120 caracteres.")]
+        public string? Name { get; set; }
+    }
+}

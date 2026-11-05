@@ -1,12 +1,13 @@
 # Modelo de dados
 
-Hoje são duas tabelas. A sugestão é chegar a quatro, sem complicar.
+Hoje são três tabelas. A sugestão é chegar a cinco, sem complicar.
 
 ## Atual
 
 ```mermaid
 erDiagram
     Trucks ||--o{ CargoItems : tem
+    Drivers |o--o| Trucks : dirige
     Trucks {
         int Id PK
         string Name
@@ -14,6 +15,11 @@ erDiagram
         decimal LengthCm
         decimal WidthCm
         decimal HeightCm
+        int DriverId FK "opcional, único"
+    }
+    Drivers {
+        int Id PK
+        string Name
     }
     CargoItems {
         int Id PK
@@ -26,6 +32,8 @@ erDiagram
     }
 ```
 
+Motorista: só o nome (veja [Segurança e LGPD](07-seguranca-e-lgpd.md)). O caminhão tem no máximo um motorista e cada motorista fica em um caminhão só. Excluir o motorista deixa o caminhão sem motorista.
+
 Problema: a carga fica presa direto no caminhão. Não dá para ter histórico ("o que o caminhão levou semana passada") nem planejar dois carregamentos para o mesmo veículo.
 
 ## Sugerido
@@ -35,6 +43,7 @@ erDiagram
     Trucks ||--o{ Loads : recebe
     Loads ||--o{ CargoItems : contem
     Users ||--o{ Loads : cria
+    Drivers |o--o| Trucks : dirige
     Trucks {
         int Id PK
         string Name
@@ -44,6 +53,11 @@ erDiagram
         decimal WidthCm "interno"
         decimal HeightCm "interno"
         decimal MaxLoadKg "novo"
+        int DriverId FK "opcional, único"
+    }
+    Drivers {
+        int Id PK
+        string Name
     }
     Loads {
         int Id PK
@@ -83,4 +97,4 @@ Notas:
 
 ## Migrations
 
-Hoje a API usa `EnsureCreatedAsync()`, que cria o banco mas não sabe alterá-lo depois. Ao adicionar campos, o banco antigo não muda. Trocar por migrations do EF Core (`dotnet ef migrations add` e `Database.MigrateAsync()`) resolve isso e é um bom ponto para mostrar no trabalho.
+Hoje a API usa `EnsureCreatedAsync()`, que cria o banco mas não sabe alterá-lo depois. Ao adicionar campos, o banco antigo não muda: é preciso apagar o banco com `docker compose down -v` (perde os dados) e subir de novo. Trocar por migrations do EF Core (`dotnet ef migrations add` e `Database.MigrateAsync()`) resolve isso e é um bom ponto para mostrar no trabalho.

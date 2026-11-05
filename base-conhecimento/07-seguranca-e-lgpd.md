@@ -9,6 +9,7 @@ O mínimo bem feito vale mais que muita coisa pela metade. A lista abaixo cabe n
 | Medidas e peso de carga | Não | Livre |
 | Placa do caminhão | Pode ser, se ligada a uma pessoa (dono autônomo) | Guardar, é necessária |
 | Nome e e-mail do usuário | Sim | Guardar só para login |
+| Nome do motorista | Sim | Guardar, é o que liga o motorista ao caminhão. Só o nome |
 | Senha | Sim, sensível para segurança | Guardar só o hash, nunca a senha |
 | CPF, CNH, telefone do motorista | Sim | **Não coletar.** O sistema não precisa deles |
 

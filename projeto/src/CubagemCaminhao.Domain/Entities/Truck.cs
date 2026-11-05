@@ -8,5 +8,7 @@ public sealed class Truck
     public decimal LengthCm { get; set; }
     public decimal WidthCm { get; set; }
     public decimal HeightCm { get; set; }
+    public int? DriverId { get; set; }
+    public Driver? Driver { get; set; }
     public ICollection<CargoItem> CargoItems { get; } = new List<CargoItem>();
 }

@@ -316,11 +316,12 @@ class _TruckCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final occupancy = truck.occupancyPercent;
-    final occupancyColor = occupancy >= 80
-        ? Theme.of(context).colorScheme.error
-        : occupancy >= 60
-        ? Colors.orange.shade800
-        : Theme.of(context).colorScheme.primary;
+    // A situação vem pronta da API; aqui só escolhe a cor.
+    final occupancyColor = switch (truck.status) {
+      'Excede' => Theme.of(context).colorScheme.error,
+      'Atenção' => Colors.orange.shade800,
+      _ => Theme.of(context).colorScheme.primary,
+    };
 
     return Card(
       clipBehavior: Clip.antiAlias,
@@ -330,9 +331,9 @@ class _TruckCard extends StatelessWidget {
           truck.name,
           style: const TextStyle(fontWeight: FontWeight.w600),
         ),
-        subtitle: Text(truck.plate),
+        subtitle: Text('${truck.plate} · ${truck.driverName ?? 'sem motorista'}'),
         trailing: Text(
-          '${occupancy.toStringAsFixed(1)}%',
+          '${truck.status} · ${occupancy.toStringAsFixed(1)}%',
           style: TextStyle(color: occupancyColor, fontWeight: FontWeight.bold),
         ),
         childrenPadding: const EdgeInsets.fromLTRB(16, 0, 16, 12),

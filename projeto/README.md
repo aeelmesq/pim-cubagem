@@ -30,6 +30,13 @@ A comunicação entre as interfaces e o banco de dados deve ocorrer exclusivamen
 2. `flutter analyze src/CubagemCaminhao.Mobile`
 3. `docker compose up --build`
 
+Se alguma tabela mudou (campo ou tabela nova), o banco antigo não é atualizado sozinho. Apague e suba de novo (os dados são perdidos):
+
+```bash
+docker compose down -v
+docker compose up --build
+```
+
 ### Aplicativo mobile
 
 Com o SQL Server e a API iniciados pelo Docker Compose, execute:

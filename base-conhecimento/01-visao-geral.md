@@ -15,6 +15,7 @@ Fazer essa conta na mão, em planilha ou "no olho", gera erro: caminhão que vol
 ## O que o sistema faz (escopo do PIM)
 
 - Cadastrar caminhões com as medidas internas do baú e a capacidade de peso.
+- Cadastrar motoristas (só o nome) e ligar cada motorista a um caminhão.
 - Cadastrar itens de carga com medidas, peso e quantidade.
 - Calcular volume, ocupação (%) e peso total de cada carregamento.
 - Avisar quando um item não cabe nas medidas do baú, quando o volume passa do limite ou quando o peso passa da capacidade.

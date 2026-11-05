@@ -40,8 +40,12 @@ Sugestão: mover as contas (volume, ocupação, peso cubado, "cabe?") de `TruckE
 | GET | `/api/trucks` | Lista caminhões com cargas e cálculos |
 | POST | `/api/trucks` | Cria caminhão |
 | DELETE | `/api/trucks/{id}` | Exclui caminhão (e suas cargas) |
+| PUT | `/api/trucks/{id}/driver` | Troca o motorista do caminhão (`driverId: null` deixa sem motorista) |
 | POST | `/api/trucks/{id}/cargo` | Adiciona item de carga |
 | DELETE | `/api/trucks/{id}/cargo/{cargoId}` | Remove item |
+| GET | `/api/drivers` | Lista motoristas, com a placa do caminhão de cada um |
+| POST | `/api/drivers` | Cria motorista |
+| DELETE | `/api/drivers/{id}` | Exclui motorista (o caminhão dele fica sem motorista) |
 | GET | `/api/status` | Status da API |
 | GET | `/health` | Health check |
 

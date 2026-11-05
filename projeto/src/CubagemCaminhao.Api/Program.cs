@@ -58,6 +58,7 @@ public class Program
 
         app.MapHealthChecks("/health");
         app.MapTruckEndpoints();
+        app.MapDriverEndpoints();
         app.MapGet("/api/status", () => new
         {
             application = "CubagemCaminhao.Api",

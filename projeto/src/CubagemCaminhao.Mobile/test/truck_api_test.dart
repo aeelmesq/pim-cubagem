@@ -22,9 +22,11 @@ void main() {
               'lengthCm': 500,
               'widthCm': 220,
               'heightCm': 240,
+              'driverName': 'João',
               'truckVolumeM3': 26.4,
               'cargoVolumeM3': 2.0,
               'occupancyPercent': 7.6,
+              'status': 'OK',
               'cargoItems': [
                 {
                   'id': 11,
@@ -49,6 +51,8 @@ void main() {
     expect(trucks, hasLength(1));
     expect(trucks.single.plate, 'ABC1D23');
     expect(trucks.single.occupancyPercent, 7.6);
+    expect(trucks.single.status, 'OK');
+    expect(trucks.single.driverName, 'João');
     expect(trucks.single.cargoItems.single.name, 'Caixas');
     expect(trucks.single.cargoItems.single.totalVolumeM3, 2.0);
   });

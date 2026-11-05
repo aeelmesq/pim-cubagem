@@ -6,9 +6,11 @@ class Truck {
     required this.lengthCm,
     required this.widthCm,
     required this.heightCm,
+    this.driverName,
     required this.truckVolumeM3,
     required this.cargoVolumeM3,
     required this.occupancyPercent,
+    required this.status,
     required this.cargoItems,
   });
 
@@ -18,9 +20,15 @@ class Truck {
   final double lengthCm;
   final double widthCm;
   final double heightCm;
+
+  /// Nome do motorista, ou null se o caminhão estiver sem motorista.
+  final String? driverName;
   final double truckVolumeM3;
   final double cargoVolumeM3;
   final double occupancyPercent;
+
+  /// Situação calculada pela API: OK, Atenção ou Excede.
+  final String status;
   final List<CargoItem> cargoItems;
 
   factory Truck.fromJson(Map<String, dynamic> json) {
@@ -33,9 +41,11 @@ class Truck {
       lengthCm: _readNumber(json['lengthCm']),
       widthCm: _readNumber(json['widthCm']),
       heightCm: _readNumber(json['heightCm']),
+      driverName: json['driverName'] as String?,
       truckVolumeM3: _readNumber(json['truckVolumeM3']),
       cargoVolumeM3: _readNumber(json['cargoVolumeM3']),
       occupancyPercent: _readNumber(json['occupancyPercent']),
+      status: json['status'] as String,
       cargoItems: cargoJson
           .map((item) => CargoItem.fromJson(item as Map<String, dynamic>))
           .toList(),

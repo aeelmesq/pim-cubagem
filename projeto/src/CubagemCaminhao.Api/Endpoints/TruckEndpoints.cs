@@ -1,3 +1,4 @@
+using CubagemCaminhao.Domain;
 using CubagemCaminhao.Domain.Entities;
 using CubagemCaminhao.Infrastructure.Data;
 using Microsoft.EntityFrameworkCore;
@@ -13,6 +14,7 @@ public static class TruckEndpoints
         group.MapGet("/", GetTrucksAsync);
         group.MapPost("/", CreateTruckAsync);
         group.MapDelete("/{truckId:int}", DeleteTruckAsync);
+        group.MapPut("/{truckId:int}/driver", SetDriverAsync);
         group.MapPost("/{truckId:int}/cargo", CreateCargoAsync);
         group.MapDelete("/{truckId:int}/cargo/{cargoId:int}", DeleteCargoAsync);
 
@@ -24,6 +26,7 @@ public static class TruckEndpoints
         var trucks = await database.Trucks
             .AsNoTracking()
             .Include(truck => truck.CargoItems)
+            .Include(truck => truck.Driver)
             .OrderBy(truck => truck.Name)
             .ToListAsync(cancellationToken);
 
@@ -56,17 +59,25 @@ public static class TruckEndpoints
             return Results.Conflict(new { message = "Já existe um caminhão cadastrado com essa placa." });
         }
 
+        var driverError = await ValidateDriverAsync(request.DriverId, null, database, cancellationToken);
+        if (driverError is not null)
+        {
+            return driverError;
+        }
+
         var truck = new Truck
         {
             Name = request.Name.Trim(),
             Plate = plate,
             LengthCm = request.LengthCm,
             WidthCm = request.WidthCm,
-            HeightCm = request.HeightCm
+            HeightCm = request.HeightCm,
+            DriverId = request.DriverId
         };
 
         database.Trucks.Add(truck);
         await database.SaveChangesAsync(cancellationToken);
+        await database.Entry(truck).Reference(item => item.Driver).LoadAsync(cancellationToken);
 
         return Results.Created($"/api/trucks/{truck.Id}", ToResponse(truck));
     }
@@ -86,6 +97,63 @@ public static class TruckEndpoints
         await database.SaveChangesAsync(cancellationToken);
 
         return Results.NoContent();
+    }
+
+    // Troca o motorista do caminhão. DriverId null deixa o caminhão sem motorista.
+    private static async Task<IResult> SetDriverAsync(
+        int truckId,
+        SetDriverRequest request,
+        CubagemDbContext database,
+        CancellationToken cancellationToken)
+    {
+        var truck = await database.Trucks
+            .Include(item => item.CargoItems)
+            .FirstOrDefaultAsync(item => item.Id == truckId, cancellationToken);
+        if (truck is null)
+        {
+            return Results.NotFound(new { message = "Caminhão não encontrado." });
+        }
+
+        var driverError = await ValidateDriverAsync(request.DriverId, truckId, database, cancellationToken);
+        if (driverError is not null)
+        {
+            return driverError;
+        }
+
+        truck.DriverId = request.DriverId;
+        await database.SaveChangesAsync(cancellationToken);
+        await database.Entry(truck).Reference(item => item.Driver).LoadAsync(cancellationToken);
+
+        return Results.Ok(ToResponse(truck));
+    }
+
+    // Confere se o motorista existe e se já não está em outro caminhão.
+    private static async Task<IResult?> ValidateDriverAsync(
+        int? driverId,
+        int? truckId,
+        CubagemDbContext database,
+        CancellationToken cancellationToken)
+    {
+        if (driverId is null)
+        {
+            return null;
+        }
+
+        if (!await database.Drivers.AnyAsync(driver => driver.Id == driverId, cancellationToken))
+        {
+            return Results.BadRequest(new { message = "Motorista não encontrado." });
+        }
+
+        var otherTruckPlate = await database.Trucks
+            .Where(truck => truck.DriverId == driverId && truck.Id != truckId)
+            .Select(truck => truck.Plate)
+            .FirstOrDefaultAsync(cancellationToken);
+        if (otherTruckPlate is not null)
+        {
+            return Results.Conflict(new { message = $"Esse motorista já está no caminhão {otherTruckPlate}." });
+        }
+
+        return null;
     }
 
     private static async Task<IResult> CreateCargoAsync(
@@ -137,7 +205,7 @@ public static class TruckEndpoints
                 cargo.WidthCm,
                 cargo.HeightCm,
                 cargo.Quantity,
-                GetVolumeM3(cargo.LengthCm, cargo.WidthCm, cargo.HeightCm) * cargo.Quantity));
+                Math.Round(GetVolumeM3(cargo.LengthCm, cargo.WidthCm, cargo.HeightCm) * cargo.Quantity, 3)));
     }
 
     private static async Task<IResult> DeleteCargoAsync(
@@ -165,7 +233,7 @@ public static class TruckEndpoints
         && heightCm is > 0 and < 100_000;
 
     private static decimal GetVolumeM3(decimal lengthCm, decimal widthCm, decimal heightCm) =>
-        lengthCm * widthCm * heightCm / 1_000_000m;
+        CubageCalculator.GetVolumeM3(lengthCm, widthCm, heightCm);
 
     private static TruckResponse ToResponse(Truck truck)
     {
@@ -190,9 +258,12 @@ public static class TruckEndpoints
             truck.LengthCm,
             truck.WidthCm,
             truck.HeightCm,
+            truck.DriverId,
+            truck.Driver?.Name,
             Math.Round(truckVolumeM3, 3),
             Math.Round(cargoVolumeM3, 3),
-            truckVolumeM3 == 0 ? 0 : Math.Round(cargoVolumeM3 / truckVolumeM3 * 100, 1),
+            Math.Round(CubageCalculator.GetOccupancyPercent(cargoVolumeM3, truckVolumeM3), 1),
+            CubageCalculator.GetStatus(cargoVolumeM3, truckVolumeM3),
             cargo);
     }
 }
@@ -202,7 +273,10 @@ public sealed record CreateTruckRequest(
     string? Plate,
     decimal LengthCm,
     decimal WidthCm,
-    decimal HeightCm);
+    decimal HeightCm,
+    int? DriverId);
+
+public sealed record SetDriverRequest(int? DriverId);
 
 public sealed record CreateCargoRequest(
     string? Name,
@@ -218,9 +292,12 @@ public sealed record TruckResponse(
     decimal LengthCm,
     decimal WidthCm,
     decimal HeightCm,
+    int? DriverId,
+    string? DriverName,
     decimal TruckVolumeM3,
     decimal CargoVolumeM3,
     decimal OccupancyPercent,
+    string Status,
     IReadOnlyList<CargoResponse> CargoItems);
 
 public sealed record CargoResponse(
