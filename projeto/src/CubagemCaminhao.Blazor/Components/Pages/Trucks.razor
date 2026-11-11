@@ -65,6 +65,12 @@
                         </div>
 
                         <div class="mt-3">
+                            <label class="form-label">Capacidade de carga (kg)</label>
+                            <InputNumber @bind-Value="truckForm.MaxLoadKg" class="form-control" />
+                            <ValidationMessage For="() => truckForm.MaxLoadKg" />
+                        </div>
+
+                        <div class="mt-3">
                             <label class="form-label">Motorista (opcional)</label>
                             <InputSelect @bind-Value="truckForm.DriverId" class="form-select">
                                 <option value="">Sem motorista</option>
@@ -112,6 +118,7 @@
                                     <th>Placa</th>
                                     <th>Baú (C x L x A)</th>
                                     <th>Volume</th>
+                                    <th>Capacidade</th>
                                     <th>Motorista</th>
                                     <th></th>
                                 </tr>
@@ -124,6 +131,7 @@
                                         <td>@truck.Plate</td>
                                         <td>@truck.LengthCm x @truck.WidthCm x @truck.HeightCm cm</td>
                                         <td>@truck.TruckVolumeM3.ToString("0.###") m³</td>
+                                        <td>@truck.MaxLoadKg.ToString("N0") kg</td>
                                         <td>
                                             @* Mostra os motoristas livres e o atual deste caminhão. *@
                                             <select class="form-select form-select-sm" value="@(truck.DriverId?.ToString() ?? "")"
@@ -206,6 +214,7 @@
                 LengthCm = truckForm.LengthCm,
                 WidthCm = truckForm.WidthCm,
                 HeightCm = truckForm.HeightCm,
+                MaxLoadKg = truckForm.MaxLoadKg,
                 DriverId = truckForm.DriverId
             };
 
@@ -307,6 +316,9 @@
         [Range(1, 99_999, ErrorMessage = "Use um valor entre 1 e 99.999 cm.")]
         public decimal HeightCm { get; set; } = 240m;
 
+        [Range(1, 99_999, ErrorMessage = "Use um valor entre 1 e 99.999 kg.")]
+        public decimal MaxLoadKg { get; set; } = 4000m;
+
         public int? DriverId { get; set; }
 
         public void Reset()
@@ -316,6 +328,7 @@
             LengthCm = 500m;
             WidthCm = 220m;
             HeightCm = 240m;
+            MaxLoadKg = 4000m;
             DriverId = null;
         }
     }

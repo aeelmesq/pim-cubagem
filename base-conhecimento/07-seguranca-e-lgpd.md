@@ -25,7 +25,7 @@ Princípios da LGPD que aparecem no projeto (Lei 13.709/2018, art. 6º):
 - [ ] Login com senha guardada como hash (ASP.NET Core Identity já faz isso).
 - [ ] API exige token (JWT) nas rotas, exceto login e `/health`.
 - [ ] Dois perfis: Admin e Operador. Só Admin exclui caminhão e cadastra usuário.
-- [ ] Senha do banco fora do código: arquivo `.env` (no `.gitignore`) lido pelo `docker-compose.yml`, ou `dotnet user-secrets` em desenvolvimento.
+- [x] Senha do banco fora do código: arquivo `.env` (no `.gitignore`) lido pelo `docker-compose.yml`, e `dotnet user-secrets` para rodar a API com `dotnet run`.
 - [ ] Banco sem porta aberta para fora em produção (no compose, a porta 1433 só é necessária para desenvolvimento).
 - [ ] Usuário do banco próprio para a API, em vez do `sa`.
 - [ ] Validação de entrada na API (já existe para nomes, placa e medidas).
@@ -43,5 +43,4 @@ Princípios da LGPD que aparecem no projeto (Lei 13.709/2018, art. 6º):
 
 ## O que precisa corrigir
 
-- Senha `P@ssw0rd!` do `sa` está escrita em `docker-compose.yml` e `appsettings.json`.
 - Nenhuma rota pede login.

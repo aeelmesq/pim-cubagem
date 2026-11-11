@@ -22,10 +22,14 @@ void main() {
               'lengthCm': 500,
               'widthCm': 220,
               'heightCm': 240,
+              'maxLoadKg': 4000,
               'driverName': 'João',
               'truckVolumeM3': 26.4,
               'cargoVolumeM3': 2.0,
               'occupancyPercent': 7.6,
+              'totalWeightKg': 30,
+              'cubedWeightKg': 600,
+              'freightWeightKg': 600,
               'status': 'OK',
               'cargoItems': [
                 {
@@ -34,8 +38,10 @@ void main() {
                   'lengthCm': 100,
                   'widthCm': 100,
                   'heightCm': 100,
+                  'weightKg': 15,
                   'quantity': 2,
                   'totalVolumeM3': 2.0,
+                  'totalWeightKg': 30,
                 },
               ],
             },
@@ -53,6 +59,9 @@ void main() {
     expect(trucks.single.occupancyPercent, 7.6);
     expect(trucks.single.status, 'OK');
     expect(trucks.single.driverName, 'João');
+    expect(trucks.single.maxLoadKg, 4000);
+    expect(trucks.single.freightWeightKg, 600);
+    expect(trucks.single.cargoItems.single.totalWeightKg, 30);
     expect(trucks.single.cargoItems.single.name, 'Caixas');
     expect(trucks.single.cargoItems.single.totalVolumeM3, 2.0);
   });
@@ -78,6 +87,7 @@ void main() {
         lengthCm: 500,
         widthCm: 220,
         heightCm: 240,
+        maxLoadKg: 4000,
       ),
       throwsA(
         isA<ApiException>().having(

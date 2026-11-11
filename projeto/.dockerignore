@@ -1,0 +1,7 @@
+# Fica fora da imagem da API.
+.env
+**/bin/
+**/obj/
+src/CubagemCaminhao.Mobile/
+src/CubagemCaminhao.Blazor/
+tests/

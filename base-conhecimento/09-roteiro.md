@@ -6,18 +6,18 @@ Ordem sugerida até a postagem (26/10 a 14/11/2026). Primeiro o que faz o sistem
 
 - [x] Corrigir a porta do Blazor para a API do Docker (8080).
 - [x] Remover `Counter` e `Weather` do Blazor e ajustar o título do menu.
-- [ ] Remover `WeatherForecast.cs` da API.
-- [ ] Trocar `EnsureCreatedAsync()` por migrations.
-- [ ] Remover ou corrigir `database/01-create-database.sql` e o mapeamento no compose.
-- [ ] Senha do banco num `.env` fora do código.
+- [x] Remover `WeatherForecast.cs` da API.
+- [ ] Trocar `EnsureCreatedAsync()` por migrations. (Cortado: mudou tabela, recriar o banco com `docker compose down -v`.)
+- [x] Remover ou corrigir `database/01-create-database.sql` e o mapeamento no compose.
+- [x] Senha do banco num `.env` fora do código.
 
 ## Etapa 2 — Regras de cubagem (até ~19/10)
 
-- [ ] Adicionar `MaxLoadKg` e `Type` no caminhão; `WeightKg` e `CanRotate` no item.
-- [ ] Criar a classe de cálculo no Domain com as regras de [Regras de cálculo](03-regras-de-calculo.md).
-- [ ] Testes unitários dessa classe com os casos de teste listados lá.
-- [ ] API devolve situação (OK / Atenção / Excede), peso total, peso cubado.
-- [ ] Web e mobile mostram a situação com cor e mensagem.
+- [x] Adicionar `MaxLoadKg` no caminhão e `WeightKg` no item. (`Type` e `CanRotate` ficaram de fora.)
+- [x] Criar a classe de cálculo no Domain com as regras de [Regras de cálculo](03-regras-de-calculo.md).
+- [x] Testes unitários dessa classe com os casos de teste listados lá.
+- [x] API devolve situação (OK / Atenção / Excede), peso total, peso cubado.
+- [x] Web e mobile mostram a situação com cor e mensagem.
 
 ## Etapa 3 — Carregamento e edição (até ~26/10)
 

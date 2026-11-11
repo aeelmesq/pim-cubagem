@@ -7,6 +7,9 @@ public sealed class CargoItem
     public decimal LengthCm { get; set; }
     public decimal WidthCm { get; set; }
     public decimal HeightCm { get; set; }
+
+    // Peso de uma unidade.
+    public decimal WeightKg { get; set; }
     public int Quantity { get; set; }
     public int TruckId { get; set; }
     public Truck? Truck { get; set; }

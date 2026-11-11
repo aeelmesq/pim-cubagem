@@ -94,20 +94,22 @@
                                 <div class="accordion-body">
                                     <div class="row g-3 mb-3">
                                         <div class="col-md-3">
-                                            <div class="small text-muted">Dimensões</div>
+                                            <div class="small text-muted">Baú (C x L x A)</div>
                                             <div>@truck.LengthCm x @truck.WidthCm x @truck.HeightCm cm</div>
                                         </div>
                                         <div class="col-md-3">
-                                            <div class="small text-muted">Volume do caminhão</div>
-                                            <div>@truck.TruckVolumeM3.ToString("0.###") m³</div>
+                                            <div class="small text-muted">Volume da carga / do baú</div>
+                                            <div>@truck.CargoVolumeM3.ToString("0.###") / @truck.TruckVolumeM3.ToString("0.###") m³</div>
+                                            <div class="small text-muted">Útil (85%): @truck.UsableVolumeM3.ToString("0.###") m³</div>
                                         </div>
                                         <div class="col-md-3">
-                                            <div class="small text-muted">Carga atual</div>
-                                            <div>@truck.CargoVolumeM3.ToString("0.###") m³</div>
+                                            <div class="small text-muted">Peso da carga / capacidade</div>
+                                            <div>@truck.TotalWeightKg.ToString("N0") / @truck.MaxLoadKg.ToString("N0") kg</div>
                                         </div>
                                         <div class="col-md-3">
-                                            <div class="small text-muted">Carga cadastrada</div>
-                                            <div>@truck.CargoItems.Count itens</div>
+                                            <div class="small text-muted">Peso para frete</div>
+                                            <div>@truck.FreightWeightKg.ToString("N0") kg</div>
+                                            <div class="small text-muted">Peso cubado: @truck.CubedWeightKg.ToString("N0") kg</div>
                                         </div>
                                     </div>
 
@@ -116,28 +118,32 @@
                                             <h4 class="h6">Adicionar item à carga</h4>
                                             <EditForm Model="cargoForm" OnValidSubmit="() => HandleCreateCargoAsync(truck.Id)">
                                                 <div class="row g-2 align-items-end">
-                                                    <div class="col-md-3">
+                                                    <div class="col-md-4">
                                                         <label class="form-label">Nome</label>
                                                         <InputText @bind-Value="cargoForm.Name" class="form-control" />
                                                     </div>
                                                     <div class="col-md-2">
-                                                        <label class="form-label">Comp.</label>
+                                                        <label class="form-label">Comp. (cm)</label>
                                                         <InputNumber @bind-Value="cargoForm.LengthCm" class="form-control" />
                                                     </div>
                                                     <div class="col-md-2">
-                                                        <label class="form-label">Larg.</label>
+                                                        <label class="form-label">Larg. (cm)</label>
                                                         <InputNumber @bind-Value="cargoForm.WidthCm" class="form-control" />
                                                     </div>
                                                     <div class="col-md-2">
-                                                        <label class="form-label">Alt.</label>
+                                                        <label class="form-label">Alt. (cm)</label>
                                                         <InputNumber @bind-Value="cargoForm.HeightCm" class="form-control" />
+                                                    </div>
+                                                    <div class="col-md-2">
+                                                        <label class="form-label">Peso (kg/un.)</label>
+                                                        <InputNumber @bind-Value="cargoForm.WeightKg" class="form-control" />
                                                     </div>
                                                     <div class="col-md-2">
                                                         <label class="form-label">Qtd.</label>
                                                         <InputNumber @bind-Value="cargoForm.Quantity" class="form-control" />
                                                     </div>
-                                                    <div class="col-md-1 d-grid">
-                                                        <button type="submit" class="btn btn-sm btn-primary" disabled="@isSubmitting">Add</button>
+                                                    <div class="col-md-2 d-grid">
+                                                        <button type="submit" class="btn btn-primary" disabled="@isSubmitting">Adicionar</button>
                                                     </div>
                                                 </div>
                                             </EditForm>
@@ -153,6 +159,7 @@
                                                     <th>Dimensões</th>
                                                     <th>Qtd.</th>
                                                     <th>Volume</th>
+                                                    <th>Peso</th>
                                                     <th></th>
                                                 </tr>
                                             </thead>
@@ -164,6 +171,7 @@
                                                         <td>@cargo.LengthCm x @cargo.WidthCm x @cargo.HeightCm cm</td>
                                                         <td>@cargo.Quantity</td>
                                                         <td>@cargo.TotalVolumeM3.ToString("0.###") m³</td>
+                                                        <td>@cargo.TotalWeightKg.ToString("N0") kg (@cargo.WeightKg.ToString("0.###") kg/un.)</td>
                                                         <td>
                                                             <button class="btn btn-link btn-sm text-danger p-0" @onclick="() => DeleteCargoAsync(truck.Id, cargo)">
                                                                 Excluir
@@ -253,6 +261,7 @@
                 LengthCm = cargoForm.LengthCm,
                 WidthCm = cargoForm.WidthCm,
                 HeightCm = cargoForm.HeightCm,
+                WeightKg = cargoForm.WeightKg,
                 Quantity = cargoForm.Quantity
             };
 
@@ -347,6 +356,7 @@
         public decimal LengthCm { get; set; } = 100m;
         public decimal WidthCm { get; set; } = 100m;
         public decimal HeightCm { get; set; } = 100m;
+        public decimal WeightKg { get; set; } = 10m;
         public int Quantity { get; set; } = 1;
 
         public void Reset()
@@ -355,6 +365,7 @@
             LengthCm = 100m;
             WidthCm = 100m;
             HeightCm = 100m;
+            WeightKg = 10m;
             Quantity = 1;
         }
     }

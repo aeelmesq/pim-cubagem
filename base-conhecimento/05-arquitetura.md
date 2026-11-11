@@ -20,7 +20,7 @@ flowchart LR
 | Web | Blazor (Interactive Server) | C# | Telas de cadastro, carregamento e relatórios |
 | Mobile | Flutter | Dart | Consulta e conferência pelo celular |
 | API | ASP.NET Core (minimal API, .NET 10) | C# | Regras de negócio, validação, cálculo, acesso ao banco |
-| Domínio | Biblioteca de classes | C# | Entidades (`Truck`, `CargoItem`) e, de preferência, as regras de cálculo |
+| Domínio | Biblioteca de classes | C# | Entidades (`Truck`, `CargoItem`, `Driver`) e as regras de cálculo (`CubageCalculator`) |
 | Infraestrutura | Entity Framework Core | C# | Mapeamento das tabelas (`CubagemDbContext`) |
 | Banco | SQL Server 2022 | SQL | Guarda os dados |
 | Ambiente | Docker Compose | YAML | Sobe API e banco com um comando |
@@ -31,7 +31,7 @@ flowchart LR
 - **Infrastructure** sabe falar com o banco.
 - **Api** junta tudo e expõe os endpoints.
 
-Sugestão: mover as contas (volume, ocupação, peso cubado, "cabe?") de `TruckEndpoints.cs` para uma classe no Domain, por exemplo `CubageCalculator`. Fica mais fácil de testar e de explicar no trabalho.
+As contas (volume, ocupação, peso cubado, "cabe?") ficam em `Domain/CubageCalculator.cs`, e não nos endpoints. Por isso dá para testá-las sem banco e sem API (`tests/CubagemCaminhao.Domain.Tests`).
 
 ## Endpoints atuais
 

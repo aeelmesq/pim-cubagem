@@ -8,6 +8,10 @@ public sealed class Truck
     public decimal LengthCm { get; set; }
     public decimal WidthCm { get; set; }
     public decimal HeightCm { get; set; }
+
+    // Capacidade de carga: quanto de mercadoria o caminhão pode levar (sem o peso do caminhão).
+    public decimal MaxLoadKg { get; set; }
+
     public int? DriverId { get; set; }
     public Driver? Driver { get; set; }
     public ICollection<CargoItem> CargoItems { get; } = new List<CargoItem>();

@@ -1,6 +1,6 @@
 # CubagemCaminhao
 
-Estrutura inicial do sistema de automação de cubagem de caminhões.
+Sistema de automação de cubagem de caminhões (PIM IV).
 
 ## Arquitetura
 
@@ -18,17 +18,40 @@ A comunicação entre as interfaces e o banco de dados deve ocorrer exclusivamen
 
 - `src/CubagemCaminhao.Api` — API ASP.NET Core
 - `src/CubagemCaminhao.Blazor` — aplicação web Blazor
-- `src/CubagemCaminhao.Domain` — entidades do domínio
+- `src/CubagemCaminhao.Domain` — entidades e regras de cálculo (`CubageCalculator`)
 - `src/CubagemCaminhao.Infrastructure` — contexto e configuração do Entity Framework Core
 - `src/CubagemCaminhao.Mobile` — aplicação móvel Flutter
-- `database/` — scripts iniciais do banco
+- `tests/CubagemCaminhao.Domain.Tests` — testes das regras de cálculo (xUnit)
 - `docker-compose.yml` — ambiente local com API e SQL Server
 
 ## Como executar
 
-1. `dotnet build CubagemCaminhao.slnx`
-2. `flutter analyze src/CubagemCaminhao.Mobile`
-3. `docker compose up --build`
+1. Crie o arquivo `.env` com a senha do banco (ele não vai para o Git):
+
+   ```bash
+   cp .env.example .env
+   ```
+
+   Troque a senha dentro dele. O SQL Server exige pelo menos 8 caracteres, com maiúscula, minúscula, número e símbolo.
+
+2. Suba o banco e a API:
+
+   ```bash
+   docker compose up --build
+   ```
+
+   A API fica em `http://localhost:8080` (teste com `http://localhost:8080/api/status`).
+
+3. Suba a web:
+
+   ```bash
+   cd src/CubagemCaminhao.Blazor
+   dotnet run
+   ```
+
+   A web fica em `http://localhost:5107`.
+
+Para conferir o código: `dotnet build CubagemCaminhao.slnx`, `dotnet test CubagemCaminhao.slnx` e `flutter analyze src/CubagemCaminhao.Mobile`.
 
 Se alguma tabela mudou (campo ou tabela nova), o banco antigo não é atualizado sozinho. Apague e suba de novo (os dados são perdidos):
 
@@ -60,11 +83,20 @@ Em um dispositivo físico, informe o IP da máquina na rede local, por exemplo:
 flutter run --dart-define=API_BASE_URL=http://192.168.0.10:8080
 ```
 
-Se a API estiver sendo executada diretamente com `dotnet run` em vez do Docker,
-use a porta HTTP configurada em `launchSettings.json` (por padrão, `5242`) no
-parâmetro `API_BASE_URL`. Em desenvolvimento, a API permite chamadas CORS de
-origens locais para viabilizar a execução do app no navegador.
+Em desenvolvimento, a API permite chamadas CORS de origens locais para o app rodar no navegador.
+
+### API com `dotnet run` (sem Docker)
+
+Suba só o banco (`docker compose up sqlserver`) e guarde a connection string fora do código, com a senha do `.env`:
+
+```bash
+dotnet user-secrets set "ConnectionStrings:DefaultConnection" "Server=localhost,1433;Database=CubagemCaminhaoDb;User Id=sa;Password=<senha do .env>;TrustServerCertificate=True;" --project src/CubagemCaminhao.Api
+cd src/CubagemCaminhao.Api
+dotnet run
+```
+
+Assim a API fica na porta `5242`. Troque `ApiBaseUrl` no `appsettings.json` do Blazor para `http://localhost:5242` e, no app, use `--dart-define=API_BASE_URL=http://localhost:5242`.
 
 ## Estado atual
 
-A solução .NET contém os projetos Blazor, API, Domain e Infrastructure. A API já possui endpoints iniciais para caminhões e itens de carga. As próximas etapas incluem ampliar a modelagem, adicionar migrations, autenticação e implementar o fluxo completo de cubagem.
+Veja [base-conhecimento/08-estado-atual.md](../base-conhecimento/08-estado-atual.md).

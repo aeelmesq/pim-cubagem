@@ -18,6 +18,7 @@ public sealed class CubagemDbContext(DbContextOptions<CubagemDbContext> options)
             entity.Property(truck => truck.LengthCm).HasPrecision(10, 2);
             entity.Property(truck => truck.WidthCm).HasPrecision(10, 2);
             entity.Property(truck => truck.HeightCm).HasPrecision(10, 2);
+            entity.Property(truck => truck.MaxLoadKg).HasPrecision(10, 2);
             entity.HasIndex(truck => truck.Plate).IsUnique();
 
             // Motorista é opcional. Cada motorista fica em um caminhão só.
@@ -40,6 +41,7 @@ public sealed class CubagemDbContext(DbContextOptions<CubagemDbContext> options)
             entity.Property(cargo => cargo.LengthCm).HasPrecision(10, 2);
             entity.Property(cargo => cargo.WidthCm).HasPrecision(10, 2);
             entity.Property(cargo => cargo.HeightCm).HasPrecision(10, 2);
+            entity.Property(cargo => cargo.WeightKg).HasPrecision(10, 3);
             entity.HasOne(cargo => cargo.Truck)
                 .WithMany(truck => truck.CargoItems)
                 .HasForeignKey(cargo => cargo.TruckId)

@@ -39,7 +39,7 @@ public class Program
         builder.Services.AddDbContext<CubagemDbContext>(options =>
             options.UseSqlServer(
                 builder.Configuration.GetConnectionString("DefaultConnection")
-                ?? throw new InvalidOperationException("A connection string named 'DefaultConnection' is required.")));
+                ?? throw new InvalidOperationException("Configure a connection string ConnectionStrings:DefaultConnection (veja o projeto/README.md).")));
 
         var app = builder.Build();
 

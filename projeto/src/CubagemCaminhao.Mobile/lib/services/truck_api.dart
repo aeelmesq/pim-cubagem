@@ -32,6 +32,7 @@ class TruckApi {
     required double lengthCm,
     required double widthCm,
     required double heightCm,
+    required double maxLoadKg,
   }) async {
     final response = await _client.post(
       _endpoint('/api/trucks/'),
@@ -42,6 +43,7 @@ class TruckApi {
         'lengthCm': lengthCm,
         'widthCm': widthCm,
         'heightCm': heightCm,
+        'maxLoadKg': maxLoadKg,
       }),
     );
     _ensureSuccess(response);
@@ -53,6 +55,7 @@ class TruckApi {
     required double lengthCm,
     required double widthCm,
     required double heightCm,
+    required double weightKg,
     required int quantity,
   }) async {
     final response = await _client.post(
@@ -63,6 +66,7 @@ class TruckApi {
         'lengthCm': lengthCm,
         'widthCm': widthCm,
         'heightCm': heightCm,
+        'weightKg': weightKg,
         'quantity': quantity,
       }),
     );

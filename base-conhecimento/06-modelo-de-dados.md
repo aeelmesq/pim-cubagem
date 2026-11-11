@@ -15,6 +15,7 @@ erDiagram
         decimal LengthCm
         decimal WidthCm
         decimal HeightCm
+        decimal MaxLoadKg "capacidade de carga"
         int DriverId FK "opcional, único"
     }
     Drivers {
@@ -27,6 +28,7 @@ erDiagram
         decimal LengthCm
         decimal WidthCm
         decimal HeightCm
+        decimal WeightKg "por unidade"
         int Quantity
         int TruckId FK
     }
@@ -52,7 +54,7 @@ erDiagram
         decimal LengthCm "interno"
         decimal WidthCm "interno"
         decimal HeightCm "interno"
-        decimal MaxLoadKg "novo"
+        decimal MaxLoadKg
         int DriverId FK "opcional, único"
     }
     Drivers {
@@ -75,9 +77,8 @@ erDiagram
         decimal LengthCm
         decimal WidthCm
         decimal HeightCm
-        decimal WeightKg "novo, por unidade"
+        decimal WeightKg "por unidade"
         int Quantity
-        bool CanRotate "novo"
     }
     Users {
         int Id PK

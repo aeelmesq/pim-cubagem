@@ -54,6 +54,11 @@ public static class TruckEndpoints
             return Results.BadRequest(new { message = "As dimensões do caminhão devem ser maiores que zero e menores que 100.000 cm." });
         }
 
+        if (request.MaxLoadKg is <= 0 or >= 100_000)
+        {
+            return Results.BadRequest(new { message = "A capacidade de carga deve ser maior que zero e menor que 100.000 kg." });
+        }
+
         if (await database.Trucks.AnyAsync(truck => truck.Plate == plate, cancellationToken))
         {
             return Results.Conflict(new { message = "Já existe um caminhão cadastrado com essa placa." });
@@ -72,6 +77,7 @@ public static class TruckEndpoints
             LengthCm = request.LengthCm,
             WidthCm = request.WidthCm,
             HeightCm = request.HeightCm,
+            MaxLoadKg = request.MaxLoadKg,
             DriverId = request.DriverId
         };
 
@@ -178,9 +184,23 @@ public static class TruckEndpoints
             return Results.BadRequest(new { message = "As dimensões da carga devem ser maiores que zero e menores que 100.000 cm." });
         }
 
+        if (request.WeightKg is <= 0 or >= 100_000)
+        {
+            return Results.BadRequest(new { message = "O peso por unidade deve ser maior que zero e menor que 100.000 kg." });
+        }
+
         if (request.Quantity is < 1 or > 100_000)
         {
             return Results.BadRequest(new { message = "A quantidade deve estar entre 1 e 100.000 unidades." });
+        }
+
+        // Cada item precisa caber sozinho no baú. Volume e peso acima do limite são aceitos, com alerta.
+        var fitError = CubageCalculator.GetFitError(
+            request.LengthCm, request.WidthCm, request.HeightCm,
+            truck.LengthCm, truck.WidthCm, truck.HeightCm);
+        if (fitError is not null)
+        {
+            return Results.BadRequest(new { message = fitError });
         }
 
         var cargo = new CargoItem
@@ -189,6 +209,7 @@ public static class TruckEndpoints
             LengthCm = request.LengthCm,
             WidthCm = request.WidthCm,
             HeightCm = request.HeightCm,
+            WeightKg = request.WeightKg,
             Quantity = request.Quantity,
             TruckId = truckId
         };
@@ -196,16 +217,7 @@ public static class TruckEndpoints
         database.CargoItems.Add(cargo);
         await database.SaveChangesAsync(cancellationToken);
 
-        return Results.Created(
-            $"/api/trucks/{truckId}/cargo/{cargo.Id}",
-            new CargoResponse(
-                cargo.Id,
-                cargo.Name,
-                cargo.LengthCm,
-                cargo.WidthCm,
-                cargo.HeightCm,
-                cargo.Quantity,
-                Math.Round(GetVolumeM3(cargo.LengthCm, cargo.WidthCm, cargo.HeightCm) * cargo.Quantity, 3)));
+        return Results.Created($"/api/trucks/{truckId}/cargo/{cargo.Id}", ToCargoResponse(cargo));
     }
 
     private static async Task<IResult> DeleteCargoAsync(
@@ -232,24 +244,28 @@ public static class TruckEndpoints
         && widthCm is > 0 and < 100_000
         && heightCm is > 0 and < 100_000;
 
-    private static decimal GetVolumeM3(decimal lengthCm, decimal widthCm, decimal heightCm) =>
-        CubageCalculator.GetVolumeM3(lengthCm, widthCm, heightCm);
+    private static CargoResponse ToCargoResponse(CargoItem item) => new(
+        item.Id,
+        item.Name,
+        item.LengthCm,
+        item.WidthCm,
+        item.HeightCm,
+        item.WeightKg,
+        item.Quantity,
+        Math.Round(CubageCalculator.GetVolumeM3(item.LengthCm, item.WidthCm, item.HeightCm) * item.Quantity, 3),
+        Math.Round(item.WeightKg * item.Quantity, 2));
 
+    // Os resultados não são gravados no banco: são calculados aqui a cada consulta.
     private static TruckResponse ToResponse(Truck truck)
     {
-        var truckVolumeM3 = GetVolumeM3(truck.LengthCm, truck.WidthCm, truck.HeightCm);
+        var truckVolumeM3 = CubageCalculator.GetVolumeM3(truck.LengthCm, truck.WidthCm, truck.HeightCm);
         var cargo = truck.CargoItems
             .OrderBy(item => item.Name)
-            .Select(item => new CargoResponse(
-                item.Id,
-                item.Name,
-                item.LengthCm,
-                item.WidthCm,
-                item.HeightCm,
-                item.Quantity,
-                Math.Round(GetVolumeM3(item.LengthCm, item.WidthCm, item.HeightCm) * item.Quantity, 3)))
+            .Select(ToCargoResponse)
             .ToList();
         var cargoVolumeM3 = cargo.Sum(item => item.TotalVolumeM3);
+        var totalWeightKg = cargo.Sum(item => item.TotalWeightKg);
+        var cubedWeightKg = CubageCalculator.GetCubedWeightKg(cargoVolumeM3);
 
         return new TruckResponse(
             truck.Id,
@@ -258,12 +274,17 @@ public static class TruckEndpoints
             truck.LengthCm,
             truck.WidthCm,
             truck.HeightCm,
+            truck.MaxLoadKg,
             truck.DriverId,
             truck.Driver?.Name,
             Math.Round(truckVolumeM3, 3),
+            Math.Round(CubageCalculator.GetUsableVolumeM3(truckVolumeM3), 3),
             Math.Round(cargoVolumeM3, 3),
             Math.Round(CubageCalculator.GetOccupancyPercent(cargoVolumeM3, truckVolumeM3), 1),
-            CubageCalculator.GetStatus(cargoVolumeM3, truckVolumeM3),
+            totalWeightKg,
+            Math.Round(cubedWeightKg, 2),
+            Math.Round(CubageCalculator.GetFreightWeightKg(totalWeightKg, cubedWeightKg), 2),
+            CubageCalculator.GetStatus(cargoVolumeM3, truckVolumeM3, totalWeightKg, truck.MaxLoadKg),
             cargo);
     }
 }
@@ -274,6 +295,7 @@ public sealed record CreateTruckRequest(
     decimal LengthCm,
     decimal WidthCm,
     decimal HeightCm,
+    decimal MaxLoadKg,
     int? DriverId);
 
 public sealed record SetDriverRequest(int? DriverId);
@@ -283,6 +305,7 @@ public sealed record CreateCargoRequest(
     decimal LengthCm,
     decimal WidthCm,
     decimal HeightCm,
+    decimal WeightKg,
     int Quantity);
 
 public sealed record TruckResponse(
@@ -292,11 +315,16 @@ public sealed record TruckResponse(
     decimal LengthCm,
     decimal WidthCm,
     decimal HeightCm,
+    decimal MaxLoadKg,
     int? DriverId,
     string? DriverName,
     decimal TruckVolumeM3,
+    decimal UsableVolumeM3,
     decimal CargoVolumeM3,
     decimal OccupancyPercent,
+    decimal TotalWeightKg,
+    decimal CubedWeightKg,
+    decimal FreightWeightKg,
     string Status,
     IReadOnlyList<CargoResponse> CargoItems);
 
@@ -306,5 +334,7 @@ public sealed record CargoResponse(
     decimal LengthCm,
     decimal WidthCm,
     decimal HeightCm,
+    decimal WeightKg,
     int Quantity,
-    decimal TotalVolumeM3);
+    decimal TotalVolumeM3,
+    decimal TotalWeightKg);

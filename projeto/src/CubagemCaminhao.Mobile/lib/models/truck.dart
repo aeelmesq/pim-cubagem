@@ -6,10 +6,14 @@ class Truck {
     required this.lengthCm,
     required this.widthCm,
     required this.heightCm,
+    required this.maxLoadKg,
     this.driverName,
     required this.truckVolumeM3,
     required this.cargoVolumeM3,
     required this.occupancyPercent,
+    required this.totalWeightKg,
+    required this.cubedWeightKg,
+    required this.freightWeightKg,
     required this.status,
     required this.cargoItems,
   });
@@ -21,11 +25,17 @@ class Truck {
   final double widthCm;
   final double heightCm;
 
+  /// Capacidade de carga (kg).
+  final double maxLoadKg;
+
   /// Nome do motorista, ou null se o caminhão estiver sem motorista.
   final String? driverName;
   final double truckVolumeM3;
   final double cargoVolumeM3;
   final double occupancyPercent;
+  final double totalWeightKg;
+  final double cubedWeightKg;
+  final double freightWeightKg;
 
   /// Situação calculada pela API: OK, Atenção ou Excede.
   final String status;
@@ -41,10 +51,14 @@ class Truck {
       lengthCm: _readNumber(json['lengthCm']),
       widthCm: _readNumber(json['widthCm']),
       heightCm: _readNumber(json['heightCm']),
+      maxLoadKg: _readNumber(json['maxLoadKg']),
       driverName: json['driverName'] as String?,
       truckVolumeM3: _readNumber(json['truckVolumeM3']),
       cargoVolumeM3: _readNumber(json['cargoVolumeM3']),
       occupancyPercent: _readNumber(json['occupancyPercent']),
+      totalWeightKg: _readNumber(json['totalWeightKg']),
+      cubedWeightKg: _readNumber(json['cubedWeightKg']),
+      freightWeightKg: _readNumber(json['freightWeightKg']),
       status: json['status'] as String,
       cargoItems: cargoJson
           .map((item) => CargoItem.fromJson(item as Map<String, dynamic>))
@@ -73,8 +87,10 @@ class CargoItem {
     required this.lengthCm,
     required this.widthCm,
     required this.heightCm,
+    required this.weightKg,
     required this.quantity,
     required this.totalVolumeM3,
+    required this.totalWeightKg,
   });
 
   final int id;
@@ -82,8 +98,12 @@ class CargoItem {
   final double lengthCm;
   final double widthCm;
   final double heightCm;
+
+  /// Peso de uma unidade (kg).
+  final double weightKg;
   final int quantity;
   final double totalVolumeM3;
+  final double totalWeightKg;
 
   factory CargoItem.fromJson(Map<String, dynamic> json) {
     return CargoItem(
@@ -92,8 +112,10 @@ class CargoItem {
       lengthCm: Truck._readNumber(json['lengthCm']),
       widthCm: Truck._readNumber(json['widthCm']),
       heightCm: Truck._readNumber(json['heightCm']),
+      weightKg: Truck._readNumber(json['weightKg']),
       quantity: json['quantity'] as int,
       totalVolumeM3: Truck._readNumber(json['totalVolumeM3']),
+      totalWeightKg: Truck._readNumber(json['totalWeightKg']),
     );
   }
 }

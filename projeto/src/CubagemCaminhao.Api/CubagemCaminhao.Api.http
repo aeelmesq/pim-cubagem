@@ -1,6 +1,48 @@
-@CubagemCaminhao.Api_HostAddress = http://localhost:5242
+@api = http://localhost:8080
 
-GET {{CubagemCaminhao.Api_HostAddress}}/weatherforecast/
-Accept: application/json
+### Status da API
+GET {{api}}/api/status
 
-###
+### Lista caminhões, com cargas e cálculos
+GET {{api}}/api/trucks
+
+### Cria caminhão (toco do exemplo resolvido)
+POST {{api}}/api/trucks
+Content-Type: application/json
+
+{
+  "name": "Toco",
+  "plate": "ABC1D23",
+  "lengthCm": 700,
+  "widthCm": 250,
+  "heightCm": 260,
+  "maxLoadKg": 6000
+}
+
+### Adiciona carga ao caminhão 1 (200 caixas de 60 x 40 x 50 cm, 15 kg cada)
+POST {{api}}/api/trucks/1/cargo
+Content-Type: application/json
+
+{
+  "name": "Caixas",
+  "lengthCm": 60,
+  "widthCm": 40,
+  "heightCm": 50,
+  "weightKg": 15,
+  "quantity": 200
+}
+
+### Lista motoristas
+GET {{api}}/api/drivers
+
+### Cria motorista
+POST {{api}}/api/drivers
+Content-Type: application/json
+
+{ "name": "João Silva" }
+
+### Coloca o motorista 1 no caminhão 1 (null tira o motorista)
+PUT {{api}}/api/trucks/1/driver
+Content-Type: application/json
+
+{ "driverId": 1 }

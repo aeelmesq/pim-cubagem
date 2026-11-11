@@ -5,7 +5,7 @@ São as regras que o sistema deve aplicar. Ficam todas na API, para que web e mo
 ## Entradas
 
 - Caminhão: comprimento, largura e altura internos (cm) e capacidade de carga (kg).
-- Item: comprimento, largura, altura (cm), peso unitário (kg), quantidade e se pode girar.
+- Item: comprimento, largura, altura (cm), peso unitário (kg) e quantidade. No chão, todo item pode girar 90°; a altura não gira.
 - Configuração: fator de aproveitamento (padrão 0,85) e fator de cubagem (padrão 300 kg/m³).
 
 ## Regras, em ordem
@@ -73,9 +73,11 @@ O sistema mostra o maior dos dois. É uma conta simples, fácil de explicar na a
 | Caso | Esperado |
 | --- | --- |
 | Item com altura maior que o baú | Recusado: "altura do item maior que a do baú" |
-| Item 300 × 100 cm num baú de 250 de largura e 700 de comprimento | Cabe girando (300 ≤ 700 e 100 ≤ 250) |
+| Item 100 × 300 cm (comprimento × largura) num baú de 700 × 250 | Cabe girando (300 ≤ 700 e 100 ≤ 250) |
 | Item mais largo e mais comprido que o baú nas duas posições | Recusado |
 | Carga com 90% do volume do baú | Atenção |
 | Carga com 110% do volume | Excede |
 | Peso acima da capacidade com pouco volume | Excede |
 | Medida zero ou negativa | Recusado na validação |
+
+Esses casos estão em `projeto/tests/CubagemCaminhao.Domain.Tests` (rodar com `dotnet test CubagemCaminhao.slnx`). O código das regras fica em `projeto/src/CubagemCaminhao.Domain/CubageCalculator.cs`. Os fatores (85% e 300 kg/m³) estão fixos nessa classe.

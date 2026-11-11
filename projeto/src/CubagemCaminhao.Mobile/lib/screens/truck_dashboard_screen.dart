@@ -44,6 +44,7 @@ class _TruckDashboardScreenState extends State<TruckDashboardScreen> {
         lengthCm: truckInput.lengthCm,
         widthCm: truckInput.widthCm,
         heightCm: truckInput.heightCm,
+        maxLoadKg: truckInput.maxLoadKg,
       ),
       successMessage: 'Caminhão cadastrado.',
     );
@@ -65,6 +66,7 @@ class _TruckDashboardScreenState extends State<TruckDashboardScreen> {
         lengthCm: cargoInput.lengthCm,
         widthCm: cargoInput.widthCm,
         heightCm: cargoInput.heightCm,
+        weightKg: cargoInput.weightKg,
         quantity: cargoInput.quantity,
       ),
       successMessage: 'Item de carga adicionado.',
@@ -352,7 +354,11 @@ class _TruckCard extends StatelessWidget {
               '${_formatDimension(truck.widthCm)} × '
               '${_formatDimension(truck.heightCm)} cm\n'
               'Volume: ${truck.cargoVolumeM3.toStringAsFixed(3)} / '
-              '${truck.truckVolumeM3.toStringAsFixed(3)} m³',
+              '${truck.truckVolumeM3.toStringAsFixed(3)} m³\n'
+              'Peso: ${truck.totalWeightKg.toStringAsFixed(0)} / '
+              '${truck.maxLoadKg.toStringAsFixed(0)} kg\n'
+              'Peso cubado: ${truck.cubedWeightKg.toStringAsFixed(0)} kg • '
+              'Peso para frete: ${truck.freightWeightKg.toStringAsFixed(0)} kg',
               style: Theme.of(context).textTheme.bodyMedium,
             ),
           ),
@@ -372,7 +378,8 @@ class _TruckCard extends StatelessWidget {
                   '${_formatDimension(cargo.lengthCm)} × '
                   '${_formatDimension(cargo.widthCm)} × '
                   '${_formatDimension(cargo.heightCm)} cm • '
-                  '${cargo.totalVolumeM3.toStringAsFixed(3)} m³',
+                  '${cargo.totalVolumeM3.toStringAsFixed(3)} m³ • '
+                  '${cargo.totalWeightKg.toStringAsFixed(0)} kg',
                 ),
                 trailing: IconButton(
                   tooltip: 'Remover item',
@@ -496,6 +503,7 @@ class TruckInput {
     required this.lengthCm,
     required this.widthCm,
     required this.heightCm,
+    required this.maxLoadKg,
   });
 
   final String name;
@@ -503,6 +511,7 @@ class TruckInput {
   final double lengthCm;
   final double widthCm;
   final double heightCm;
+  final double maxLoadKg;
 }
 
 class CargoInput {
@@ -511,6 +520,7 @@ class CargoInput {
     required this.lengthCm,
     required this.widthCm,
     required this.heightCm,
+    required this.weightKg,
     required this.quantity,
   });
 
@@ -518,6 +528,7 @@ class CargoInput {
   final double lengthCm;
   final double widthCm;
   final double heightCm;
+  final double weightKg;
   final int quantity;
 }
 
@@ -535,6 +546,7 @@ class _TruckFormDialogState extends State<TruckFormDialog> {
   final _lengthController = TextEditingController(text: '500');
   final _widthController = TextEditingController(text: '220');
   final _heightController = TextEditingController(text: '240');
+  final _maxLoadController = TextEditingController(text: '4000');
 
   @override
   void dispose() {
@@ -543,6 +555,7 @@ class _TruckFormDialogState extends State<TruckFormDialog> {
     _lengthController.dispose();
     _widthController.dispose();
     _heightController.dispose();
+    _maxLoadController.dispose();
     super.dispose();
   }
 
@@ -575,6 +588,8 @@ class _TruckFormDialogState extends State<TruckFormDialog> {
               _numberField(_widthController, 'Largura (cm)'),
               const SizedBox(height: 12),
               _numberField(_heightController, 'Altura (cm)'),
+              const SizedBox(height: 12),
+              _numberField(_maxLoadController, 'Capacidade de carga (kg)'),
             ],
           ),
         ),
@@ -610,6 +625,7 @@ class _TruckFormDialogState extends State<TruckFormDialog> {
         lengthCm: _parseNumber(_lengthController.text),
         widthCm: _parseNumber(_widthController.text),
         heightCm: _parseNumber(_heightController.text),
+        maxLoadKg: _parseNumber(_maxLoadController.text),
       ),
     );
   }
@@ -630,6 +646,7 @@ class _CargoFormDialogState extends State<CargoFormDialog> {
   final _lengthController = TextEditingController(text: '100');
   final _widthController = TextEditingController(text: '100');
   final _heightController = TextEditingController(text: '100');
+  final _weightController = TextEditingController(text: '10');
   final _quantityController = TextEditingController(text: '1');
 
   @override
@@ -638,6 +655,7 @@ class _CargoFormDialogState extends State<CargoFormDialog> {
     _lengthController.dispose();
     _widthController.dispose();
     _heightController.dispose();
+    _weightController.dispose();
     _quantityController.dispose();
     super.dispose();
   }
@@ -669,6 +687,8 @@ class _CargoFormDialogState extends State<CargoFormDialog> {
               _numberField(_widthController, 'Largura (cm)'),
               const SizedBox(height: 12),
               _numberField(_heightController, 'Altura (cm)'),
+              const SizedBox(height: 12),
+              _numberField(_weightController, 'Peso por unidade (kg)'),
               const SizedBox(height: 12),
               TextFormField(
                 controller: _quantityController,
@@ -710,6 +730,7 @@ class _CargoFormDialogState extends State<CargoFormDialog> {
         lengthCm: _parseNumber(_lengthController.text),
         widthCm: _parseNumber(_widthController.text),
         heightCm: _parseNumber(_heightController.text),
+        weightKg: _parseNumber(_weightController.text),
         quantity: int.parse(_quantityController.text.trim()),
       ),
     );
@@ -725,7 +746,7 @@ String? _requiredText(String? value) {
 
 String? _positiveNumber(String? value) {
   if (value == null || value.trim().isEmpty) {
-    return 'Informe uma dimensão.';
+    return 'Informe um valor.';
   }
   final number = _tryParseNumber(value);
   if (number == null || number <= 0 || number >= 100000) {

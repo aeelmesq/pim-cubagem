@@ -5,4 +5,7 @@
     <Project Path="src/CubagemCaminhao.Domain/CubagemCaminhao.Domain.csproj" />
     <Project Path="src/CubagemCaminhao.Infrastructure/CubagemCaminhao.Infrastructure.csproj" />
   </Folder>
+  <Folder Name="/tests/">
+    <Project Path="tests/CubagemCaminhao.Domain.Tests/CubagemCaminhao.Domain.Tests.csproj" />
+  </Folder>
 </Solution>
