@@ -17,7 +17,10 @@ class TruckApi {
   final http.Client _client;
 
   Future<List<Truck>> getTrucks() async {
-    final response = await _client.get(_endpoint('/api/trucks/'));
+    final response = await _client.get(
+      _endpoint('/api/trucks/'),
+      headers: _authHeaders,
+    );
     _ensureSuccess(response);
 
     final decoded = jsonDecode(response.body) as List<dynamic>;
@@ -36,7 +39,7 @@ class TruckApi {
   }) async {
     final response = await _client.post(
       _endpoint('/api/trucks/'),
-      headers: _jsonHeaders,
+      headers: {..._jsonHeaders, ..._authHeaders},
       body: jsonEncode({
         'name': name,
         'plate': plate,
@@ -60,7 +63,7 @@ class TruckApi {
   }) async {
     final response = await _client.post(
       _endpoint('/api/trucks/$truckId/cargo'),
-      headers: _jsonHeaders,
+      headers: {..._jsonHeaders, ..._authHeaders},
       body: jsonEncode({
         'name': name,
         'lengthCm': lengthCm,
@@ -74,7 +77,10 @@ class TruckApi {
   }
 
   Future<void> deleteTruck(int truckId) async {
-    final response = await _client.delete(_endpoint('/api/trucks/$truckId'));
+    final response = await _client.delete(
+      _endpoint('/api/trucks/$truckId'),
+      headers: _authHeaders,
+    );
     _ensureSuccess(response);
   }
 
@@ -84,6 +90,7 @@ class TruckApi {
   }) async {
     final response = await _client.delete(
       _endpoint('/api/trucks/$truckId/cargo/$cargoId'),
+      headers: _authHeaders,
     );
     _ensureSuccess(response);
   }
@@ -102,6 +109,22 @@ class TruckApi {
   }
 
   static const _jsonHeaders = {'Content-Type': 'application/json'};
+
+  // Senha do site (Basic Auth do nginx), só para o APK: flutter build apk
+  // --dart-define=API_BASIC_AUTH=usuario:senha. No navegador fica vazio,
+  // porque o próprio navegador manda a senha que a pessoa digitou.
+  static final Map<String, String> _authHeaders = _basicAuthHeaders();
+
+  static Map<String, String> _basicAuthHeaders() {
+    const credentials = String.fromEnvironment('API_BASIC_AUTH');
+    if (credentials.isEmpty) {
+      return const {};
+    }
+
+    return {
+      'Authorization': 'Basic ${base64Encode(utf8.encode(credentials))}',
+    };
+  }
 
   void _ensureSuccess(http.Response response) {
     if (response.statusCode >= 200 && response.statusCode < 300) {

@@ -1,4 +1,8 @@
+using System.Globalization;
 using CubagemCaminhao.Blazor.Components;
+
+// Números e datas no formato brasileiro (52,7%, 3.000 kg), mesmo em servidor sem idioma configurado.
+CultureInfo.DefaultThreadCurrentCulture = CultureInfo.DefaultThreadCurrentUICulture = new CultureInfo("pt-BR");
 
 var builder = WebApplication.CreateBuilder(args);
 

@@ -8,7 +8,8 @@ services:
       MSSQL_SA_PASSWORD: "${MSSQL_SA_PASSWORD:?Crie o arquivo .env a partir do .env.example}"
       MSSQL_PID: "Developer"
     ports:
-      - "1433:1433"
+      # Só este PC acessa o banco (o túnel para a VPS também sai daqui).
+      - "127.0.0.1:1433:1433"
     volumes:
       - sqlserver_data:/var/opt/mssql
     healthcheck:

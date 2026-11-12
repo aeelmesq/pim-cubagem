@@ -26,12 +26,12 @@ Princípios da LGPD que aparecem no projeto (Lei 13.709/2018, art. 6º):
 - [ ] API exige token (JWT) nas rotas, exceto login e `/health`.
 - [ ] Dois perfis: Admin e Operador. Só Admin exclui caminhão e cadastra usuário.
 - [x] Senha do banco fora do código: arquivo `.env` (no `.gitignore`) lido pelo `docker-compose.yml`, e `dotnet user-secrets` para rodar a API com `dotnet run`.
-- [ ] Banco sem porta aberta para fora em produção (no compose, a porta 1433 só é necessária para desenvolvimento).
-- [ ] Usuário do banco próprio para a API, em vez do `sa`.
+- [x] Banco sem porta aberta para fora: no PC, a 1433 só aceita o próprio PC; na VPS, o banco chega por túnel SSH que só os containers alcançam.
+- [x] Usuário do banco próprio para a API em produção (`cubagem_api`), em vez do `sa`.
 - [ ] Validação de entrada na API (já existe para nomes, placa e medidas).
 - [ ] Consultas pelo Entity Framework, que evita SQL injection (já é assim).
 - [ ] CORS restrito às origens conhecidas (já existe para desenvolvimento).
-- [ ] HTTPS fora do ambiente local.
+- [x] HTTPS fora do ambiente local (nginx com Let's Encrypt, HTTP redireciona). Veja `projeto/deploy/README.md`.
 - [ ] Logs sem senha, token ou dado pessoal.
 - [ ] Mensagens de erro para o usuário sem detalhe técnico (stack trace só no log).
 
@@ -43,4 +43,4 @@ Princípios da LGPD que aparecem no projeto (Lei 13.709/2018, art. 6º):
 
 ## O que precisa corrigir
 
-- Nenhuma rota pede login.
+- Nenhuma rota pede login. Na VPS, o nginx pede usuário e senha (Basic Auth) para o site inteiro, como proteção até existir login de verdade.

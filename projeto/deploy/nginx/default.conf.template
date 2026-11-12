@@ -1,0 +1,101 @@
+# ${NGINX_HOST} é trocado pelo nome do site quando o container sobe.
+server_tokens off;
+
+limit_req_zone $binary_remote_addr zone=api:10m rate=10r/s;
+limit_req_zone $binary_remote_addr zone=site:10m rate=30r/s;
+limit_req_status 429;
+
+# DNS do Docker: o nginx procura de novo o IP da API e do Blazor a cada 10 s,
+# porque ele muda quando o container é recriado.
+resolver 127.0.0.11 valid=10s ipv6=off;
+
+# O Blazor usa WebSocket.
+map $http_upgrade $connection_upgrade {
+    default upgrade;
+    ''      close;
+}
+
+# HTTP só redireciona para HTTPS.
+server {
+    listen 80 default_server;
+    server_name _;
+    return 301 https://${NGINX_HOST}$request_uri;
+}
+
+# Quem acessa pelo IP ou por outro nome não recebe nada.
+server {
+    listen 443 ssl default_server;
+    server_name _;
+    ssl_certificate     /etc/letsencrypt/live/${NGINX_HOST}/fullchain.pem;
+    ssl_certificate_key /etc/letsencrypt/live/${NGINX_HOST}/privkey.pem;
+    return 444;
+}
+
+server {
+    listen 443 ssl;
+    http2 on;
+    server_name ${NGINX_HOST};
+
+    ssl_certificate     /etc/letsencrypt/live/${NGINX_HOST}/fullchain.pem;
+    ssl_certificate_key /etc/letsencrypt/live/${NGINX_HOST}/privkey.pem;
+    ssl_protocols TLSv1.2 TLSv1.3;
+    ssl_session_cache shared:SSL:10m;
+
+    add_header Strict-Transport-Security "max-age=31536000" always;
+    add_header X-Content-Type-Options "nosniff" always;
+    add_header X-Frame-Options "DENY" always;
+    add_header Referrer-Policy "same-origin" always;
+
+    client_max_body_size 1m;
+
+    # O sistema não tem login: o site inteiro pede usuário e senha.
+    auth_basic "PIM Cubagem";
+    auth_basic_user_file /etc/nginx/htpasswd;
+
+    proxy_http_version 1.1;
+    proxy_set_header Host $host;
+    proxy_set_header X-Real-IP $remote_addr;
+    proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+    proxy_set_header X-Forwarded-Proto $scheme;
+    # A senha do Basic Auth não precisa chegar na API nem no Blazor.
+    proxy_set_header Authorization "";
+
+    # Com variável, o nginx usa o resolver acima em vez de guardar o IP de quando subiu.
+    set $api_upstream http://api:8080;
+    set $blazor_upstream http://blazor:8080;
+
+    location /api/ {
+        limit_req zone=api burst=20 nodelay;
+        proxy_pass $api_upstream;
+    }
+
+    location = /health {
+        auth_basic off;
+        proxy_pass $api_upstream;
+    }
+
+    # App Flutter (versão web).
+    location = /app {
+        return 301 /app/;
+    }
+
+    location /app/ {
+        root /usr/share/nginx;
+        try_files $uri $uri/ /app/index.html;
+    }
+
+    # Blazor.
+    location / {
+        limit_req zone=site burst=60 nodelay;
+        # Um proxy_set_header aqui apaga os de cima, então repete todos.
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto $scheme;
+        proxy_set_header Authorization "";
+        proxy_set_header Upgrade $http_upgrade;
+        proxy_set_header Connection $connection_upgrade;
+        proxy_read_timeout 1h;
+        proxy_pass $blazor_upstream;
+    }
+}

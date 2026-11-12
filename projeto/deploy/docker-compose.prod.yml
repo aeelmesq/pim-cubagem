@@ -1,0 +1,52 @@
+# Produção na VPS. Só o nginx abre porta para fora (80 e 443).
+# O banco não roda aqui: ele fica no PC e chega pelo túnel SSH em 172.30.0.1:1433.
+# Quem sobe isso é o deploy/deploy.sh (veja deploy/README.md).
+name: cubagem
+
+services:
+  api:
+    image: cubagem-api:latest
+    restart: unless-stopped
+    environment:
+      ASPNETCORE_ENVIRONMENT: Production
+      ASPNETCORE_FORWARDEDHEADERS_ENABLED: "true"
+      ConnectionStrings__DefaultConnection: "Server=172.30.0.1,1433;Database=CubagemCaminhaoDb;User Id=${DB_USER:?};Password=${DB_PASSWORD:?};TrustServerCertificate=True;Connect Timeout=15;"
+    mem_limit: 300m
+    networks: [app]
+
+  blazor:
+    image: cubagem-blazor:latest
+    restart: unless-stopped
+    environment:
+      ASPNETCORE_ENVIRONMENT: Production
+      ASPNETCORE_FORWARDEDHEADERS_ENABLED: "true"
+      ApiBaseUrl: http://api:8080
+    mem_limit: 300m
+    networks: [app]
+
+  nginx:
+    image: nginx:1.28-alpine
+    container_name: cubagem-nginx
+    restart: unless-stopped
+    depends_on: [api, blazor]
+    ports:
+      - "80:80"
+      - "443:443"
+    environment:
+      NGINX_HOST: ${NGINX_HOST:?}
+    volumes:
+      - ./nginx/default.conf.template:/etc/nginx/templates/default.conf.template:ro
+      - ./nginx/htpasswd:/etc/nginx/htpasswd:ro
+      - ./flutter-web:/usr/share/nginx/app:ro
+      - /etc/letsencrypt:/etc/letsencrypt:ro
+    mem_limit: 64m
+    networks: [app]
+
+networks:
+  app:
+    driver_opts:
+      com.docker.network.bridge.name: br-cubagem
+    ipam:
+      config:
+        - subnet: 172.30.0.0/24
+          gateway: 172.30.0.1

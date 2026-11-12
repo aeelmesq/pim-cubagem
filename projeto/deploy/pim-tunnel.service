@@ -1,0 +1,17 @@
+# Túnel do banco: leva o SQL Server deste PC até a VPS, por SSH.
+# Na VPS ele aparece só em 172.30.0.1:1433, que só os containers alcançam.
+# Instalado pelo deploy/instalar-tunel.sh. Parar: systemctl --user stop pim-tunnel
+[Unit]
+Description=Túnel do banco do PIM para a VPS
+After=network-online.target
+
+[Service]
+ExecStart=/usr/bin/ssh -N -i %h/.ssh/pim_tunnel \
+  -o IdentitiesOnly=yes -o BatchMode=yes -o ExitOnForwardFailure=yes \
+  -o ServerAliveInterval=30 -o ServerAliveCountMax=3 \
+  -R 172.30.0.1:1433:127.0.0.1:1433 tunnel@VPS_HOST
+Restart=always
+RestartSec=60
+
+[Install]
+WantedBy=default.target

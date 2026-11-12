@@ -1,3 +1,4 @@
+using System.Globalization;
 
 using Microsoft.EntityFrameworkCore;
 using CubagemCaminhao.Infrastructure.Data;
@@ -9,6 +10,9 @@ public class Program
 {
     public static async Task Main(string[] args)
     {
+        // Mensagens com número no formato brasileiro (12,5 cm), mesmo em servidor sem idioma configurado.
+        CultureInfo.DefaultThreadCurrentCulture = CultureInfo.DefaultThreadCurrentUICulture = new CultureInfo("pt-BR");
+
         var builder = WebApplication.CreateBuilder(args);
 
         builder.Services.AddOpenApi();

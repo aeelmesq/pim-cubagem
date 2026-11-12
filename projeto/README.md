@@ -23,6 +23,7 @@ A comunicação entre as interfaces e o banco de dados deve ocorrer exclusivamen
 - `src/CubagemCaminhao.Mobile` — aplicação móvel Flutter
 - `tests/CubagemCaminhao.Domain.Tests` — testes das regras de cálculo (xUnit)
 - `docker-compose.yml` — ambiente local com API e SQL Server
+- `deploy/` — publicação na VPS com nginx e HTTPS (veja [deploy/README.md](deploy/README.md))
 
 ## Como executar
 
