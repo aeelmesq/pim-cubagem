@@ -13,4 +13,5 @@ Slides e roteiro de fala. Se houver vídeo de demonstração, coloque aqui só o
 
 ## Links
 
+- Como rodar o sistema no dia: [como-rodar.md](como-rodar.md)
 - Vídeo de demonstração: _a preencher_
