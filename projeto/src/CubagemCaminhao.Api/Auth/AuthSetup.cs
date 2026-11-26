@@ -19,12 +19,21 @@ public sealed class JwtOptions
     public SymmetricSecurityKey GetSigningKey() => new(Encoding.UTF8.GetBytes(Key));
 }
 
+// Login do administrador (seção "Admin" do appsettings ou variáveis Admin__Username e Admin__Password).
+// Sem senha configurada, o login de administrador fica desligado.
+public sealed class AdminOptions
+{
+    public string Username { get; set; } = "admin";
+    public string Password { get; set; } = string.Empty;
+}
+
 public static class AuthSetup
 {
     // Nome do cookie HttpOnly que guarda o JWT no navegador.
     public const string CookieName = "cubagem_token";
 
     public const string DriverRole = "Motorista";
+    public const string AdminRole = "Administrador";
     public const string LoginRateLimitPolicy = "login";
 
     public static void AddDriverAuthentication(this WebApplicationBuilder builder)
@@ -39,6 +48,7 @@ public static class AuthSetup
         }
 
         builder.Services.AddSingleton(options);
+        builder.Services.AddSingleton(builder.Configuration.GetSection("Admin").Get<AdminOptions>() ?? new AdminOptions());
         builder.Services.AddSingleton<TokenService>();
         builder.Services.AddSingleton<IPasswordHasher<Driver>, PasswordHasher<Driver>>();
 

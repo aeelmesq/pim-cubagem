@@ -8,34 +8,53 @@
 
 <div class="nav-scrollable" onclick="document.querySelector('.navbar-toggler').click()">
     <nav class="nav flex-column">
-        <div class="nav-item px-3">
-            <NavLink class="nav-link" href="" Match="NavLinkMatch.All">
-                <span class="bi bi-house-door-fill-nav-menu" aria-hidden="true"></span> Início
-            </NavLink>
-        </div>
+        <AuthorizeView Roles="@AdminSession.Role">
+            <Authorized>
+                <div class="nav-item px-3">
+                    <NavLink class="nav-link" href="" Match="NavLinkMatch.All">
+                        <span class="bi bi-house-door-fill-nav-menu" aria-hidden="true"></span> Início
+                    </NavLink>
+                </div>
 
-        <div class="nav-item px-3">
-            <NavLink class="nav-link" href="caminhoes">
-                <span class="bi bi-plus-square-fill-nav-menu" aria-hidden="true"></span> Caminhões
-            </NavLink>
-        </div>
+                <div class="nav-item px-3">
+                    <NavLink class="nav-link" href="caminhoes">
+                        <span class="bi bi-plus-square-fill-nav-menu" aria-hidden="true"></span> Caminhões
+                    </NavLink>
+                </div>
 
-        <div class="nav-item px-3">
-            <NavLink class="nav-link" href="motoristas">
-                <span class="bi bi-list-nested-nav-menu" aria-hidden="true"></span> Motoristas
-            </NavLink>
-        </div>
+                <div class="nav-item px-3">
+                    <NavLink class="nav-link" href="motoristas">
+                        <span class="bi bi-list-nested-nav-menu" aria-hidden="true"></span> Motoristas
+                    </NavLink>
+                </div>
 
-        <div class="nav-item px-3">
-            <NavLink class="nav-link" href="historico">
-                <span class="bi bi-list-nested-nav-menu" aria-hidden="true"></span> Histórico de cargas
-            </NavLink>
-        </div>
+                <div class="nav-item px-3">
+                    <NavLink class="nav-link" href="historico">
+                        <span class="bi bi-list-nested-nav-menu" aria-hidden="true"></span> Histórico de cargas
+                    </NavLink>
+                </div>
 
-        <div class="nav-item px-3">
-            <NavLink class="nav-link" href="minha-carga">
-                <span class="bi bi-house-door-fill-nav-menu" aria-hidden="true"></span> Área do motorista
-            </NavLink>
-        </div>
+                <div class="nav-item px-3">
+                    <form method="post" action="admin/sair">
+                        <button type="submit" class="nav-link">
+                            <span class="bi bi-list-nested-nav-menu" aria-hidden="true"></span> Sair (@context.User.Identity?.Name)
+                        </button>
+                    </form>
+                </div>
+            </Authorized>
+            <NotAuthorized>
+                <div class="nav-item px-3">
+                    <NavLink class="nav-link" href="minha-carga">
+                        <span class="bi bi-house-door-fill-nav-menu" aria-hidden="true"></span> Área do motorista
+                    </NavLink>
+                </div>
+
+                <div class="nav-item px-3">
+                    <NavLink class="nav-link" href="admin/entrar">
+                        <span class="bi bi-plus-square-fill-nav-menu" aria-hidden="true"></span> Entrar (administrador)
+                    </NavLink>
+                </div>
+            </NotAuthorized>
+        </AuthorizeView>
     </nav>
 </div>

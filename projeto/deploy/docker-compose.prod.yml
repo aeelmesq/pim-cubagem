@@ -13,6 +13,9 @@ services:
       ConnectionStrings__DefaultConnection: "Server=172.30.0.1,1433;Database=CubagemCaminhaoDb;User Id=${DB_USER:?};Password=${DB_PASSWORD:?};TrustServerCertificate=True;Connect Timeout=15;"
       # Chave que assina o JWT do login dos motoristas.
       Jwt__Key: "${JWT_KEY:?}"
+      # Usuário e senha do administrador (telas de cadastro do Blazor).
+      Admin__Username: "${ADMIN_USER:-admin}"
+      Admin__Password: "${ADMIN_PASSWORD:?Defina ADMIN_PASSWORD no deploy/.env}"
     mem_limit: 300m
     networks: [app]
 

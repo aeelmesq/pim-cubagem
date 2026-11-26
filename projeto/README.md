@@ -75,7 +75,14 @@ Como o login funciona:
 - O Blazor chama a API pelo servidor: ele recebe o token, guarda no cookie HttpOnly do site e manda no cabeçalho nas chamadas a `/api/me`. Sair apaga o cookie.
 - A chave que assina o JWT fica em `Jwt:Key`. Em desenvolvimento ela já está no `appsettings.Development.json` da API; em produção vem da variável `JWT_KEY` (veja [deploy/README.md](deploy/README.md)).
 
-As telas de cadastro (caminhões, motoristas, histórico) continuam sem login, como antes: o login é só da área do motorista.
+### Login do administrador
+
+As telas de cadastro (Início, Caminhões, Motoristas e Histórico) exigem o login de administrador em `/admin/entrar`.
+
+- Em desenvolvimento (Docker Compose ou `dotnet run`), o usuário é `admin` e a senha é `admin12345` (em `appsettings.Development.json` da API).
+- Em produção, defina `ADMIN_USER` e `ADMIN_PASSWORD` no `deploy/.env`. Sem senha configurada, o login de administrador fica desligado.
+- A API confere usuário e senha (`POST /api/auth/admin/login`, com o mesmo limite de 10 tentativas por minuto) e o Blazor guarda a sessão num cookie HttpOnly (`cubagem_admin`, 8 horas).
+- As rotas da API continuam abertas para o app Flutter; no servidor elas seguem protegidas pela senha do nginx.
 
 ### Aplicativo mobile
 

@@ -1,4 +1,6 @@
 using System.Security.Claims;
+using System.Security.Cryptography;
+using System.Text;
 using CubagemCaminhao.Api.Auth;
 using CubagemCaminhao.Domain.Entities;
 using CubagemCaminhao.Infrastructure.Data;
@@ -8,7 +10,7 @@ using Microsoft.IdentityModel.JsonWebTokens;
 
 namespace CubagemCaminhao.Api.Endpoints;
 
-// Login do motorista e área "minha carga".
+// Login do motorista, área "minha carga" e login do administrador.
 public static class AuthEndpoints
 {
     private const string InvalidCredentialsMessage = "Usuário ou senha inválidos.";
@@ -23,6 +25,7 @@ public static class AuthEndpoints
         var auth = endpoints.MapGroup("/api/auth").WithTags("Login");
         auth.MapPost("/login", LoginAsync).RequireRateLimiting(AuthSetup.LoginRateLimitPolicy);
         auth.MapPost("/logout", Logout);
+        auth.MapPost("/admin/login", AdminLogin).RequireRateLimiting(AuthSetup.LoginRateLimitPolicy);
 
         endpoints.MapGet("/api/me", GetMeAsync)
             .WithTags("Login")
@@ -114,11 +117,43 @@ public static class AuthEndpoints
             loads));
     }
 
+    // Confere usuário e senha do administrador (configurados na API, fora do código em produção).
+    // A sessão do administrador fica no cookie do Blazor; a API só confere as credenciais.
+    private static IResult AdminLogin(LoginRequest request, AdminOptions admin)
+    {
+        if (string.IsNullOrEmpty(admin.Password))
+        {
+            return Results.Json(
+                new { message = "O login de administrador não está configurado na API (Admin:Password)." },
+                statusCode: StatusCodes.Status503ServiceUnavailable);
+        }
+
+        var expectedUsername = DriverCredentials.NormalizeUsername(admin.Username);
+        var usernameOk = FixedTimeEquals(DriverCredentials.NormalizeUsername(request.Username), expectedUsername);
+        var passwordOk = FixedTimeEquals(request.Password ?? string.Empty, admin.Password);
+
+        // "&" e não "&&": confere as duas coisas sempre, para a resposta demorar o mesmo tempo.
+        if (!(usernameOk & passwordOk))
+        {
+            return InvalidCredentials();
+        }
+
+        return Results.Ok(new AdminLoginResponse(expectedUsername));
+    }
+
+    // Compara em tempo constante (o resumo SHA-256 deixa os dois lados do mesmo tamanho).
+    private static bool FixedTimeEquals(string value, string expected) =>
+        CryptographicOperations.FixedTimeEquals(
+            SHA256.HashData(Encoding.UTF8.GetBytes(value)),
+            SHA256.HashData(Encoding.UTF8.GetBytes(expected)));
+
     private static IResult InvalidCredentials() =>
         Results.Json(new { message = InvalidCredentialsMessage }, statusCode: StatusCodes.Status401Unauthorized);
 }
 
 public sealed record LoginRequest(string? Username, string? Password);
+
+public sealed record AdminLoginResponse(string Username);
 
 public sealed record LoginResponse(string Token, DateTimeOffset ExpiresAt, int DriverId, string DriverName);
 
