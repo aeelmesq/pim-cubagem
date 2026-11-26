@@ -1,0 +1,105 @@
+@page "/historico"
+@inject IHttpClientFactory HttpClientFactory
+
+<PageTitle>Histórico de cargas</PageTitle>
+
+<div class="d-flex flex-column gap-4">
+    <div>
+        <h1 class="mb-1">Histórico de cargas</h1>
+        <p class="text-secondary mb-0">
+            Cada vez que um caminhão sai, a carga fica registrada aqui como estava na hora da saída.
+            Para registrar, use "Registrar saída" na página <a href="">Início</a>.
+        </p>
+    </div>
+
+    @if (!string.IsNullOrWhiteSpace(errorMessage))
+    {
+        <div class="alert alert-danger" role="alert">@errorMessage</div>
+    }
+
+    <div class="card shadow-sm border-0">
+        <div class="card-body">
+            <div class="d-flex justify-content-between align-items-end flex-wrap gap-3 mb-3">
+                <div>
+                    <label class="form-label" for="truck-filter">Caminhão</label>
+                    <select id="truck-filter" class="form-select" value="@selectedTruckId" @onchange="ChangeTruckAsync">
+                        <option value="">Todos</option>
+                        @foreach (var truck in trucks)
+                        {
+                            <option value="@truck.Id">@truck.Plate · @truck.Name</option>
+                        }
+                    </select>
+                </div>
+                <button class="btn btn-outline-secondary btn-sm" @onclick="LoadHistoryAsync">Atualizar</button>
+            </div>
+
+            @if (isLoading)
+            {
+                <div class="text-secondary">Consultando a API de cubagem...</div>
+            }
+            else
+            {
+                <LoadHistoryList Loads="loads" />
+                @if (loads.Count == MaxShown)
+                {
+                    <p class="form-text mt-2 mb-0">Mostrando as @MaxShown cargas mais recentes.</p>
+                }
+            }
+        </div>
+    </div>
+</div>
+
+@code {
+    // Mesmo limite da API (LoadEndpoints.MaxLoadsPerQuery).
+    private const int MaxShown = 100;
+
+    private readonly List<LoadDto> loads = [];
+    private readonly List<TruckDto> trucks = [];
+    private string selectedTruckId = string.Empty;
+    private bool isLoading;
+    private string? errorMessage;
+
+    protected override async Task OnInitializedAsync()
+    {
+        try
+        {
+            using var http = HttpClientFactory.CreateClient("CubagemApi");
+            trucks.AddRange(await http.GetFromJsonAsync<List<TruckDto>>("/api/trucks/") ?? []);
+        }
+        catch (Exception)
+        {
+            errorMessage = ApiException.ConnectionError;
+        }
+
+        await LoadHistoryAsync();
+    }
+
+    private async Task ChangeTruckAsync(ChangeEventArgs args)
+    {
+        selectedTruckId = args.Value?.ToString() ?? string.Empty;
+        await LoadHistoryAsync();
+    }
+
+    private async Task LoadHistoryAsync()
+    {
+        isLoading = true;
+        errorMessage = null;
+
+        try
+        {
+            using var http = HttpClientFactory.CreateClient("CubagemApi");
+            var url = string.IsNullOrEmpty(selectedTruckId) ? "/api/loads" : $"/api/loads?truckId={selectedTruckId}";
+            var response = await http.GetFromJsonAsync<List<LoadDto>>(url);
+            loads.Clear();
+            loads.AddRange(response ?? []);
+        }
+        catch (Exception)
+        {
+            errorMessage = ApiException.ConnectionError;
+        }
+        finally
+        {
+            isLoading = false;
+        }
+    }
+}

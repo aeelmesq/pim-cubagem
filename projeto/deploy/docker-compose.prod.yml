@@ -11,6 +11,8 @@ services:
       ASPNETCORE_ENVIRONMENT: Production
       ASPNETCORE_FORWARDEDHEADERS_ENABLED: "true"
       ConnectionStrings__DefaultConnection: "Server=172.30.0.1,1433;Database=CubagemCaminhaoDb;User Id=${DB_USER:?};Password=${DB_PASSWORD:?};TrustServerCertificate=True;Connect Timeout=15;"
+      # Chave que assina o JWT do login dos motoristas.
+      Jwt__Key: "${JWT_KEY:?}"
     mem_limit: 300m
     networks: [app]
 

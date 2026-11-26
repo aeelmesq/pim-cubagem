@@ -10,7 +10,10 @@ builder.Services.AddHttpClient("CubagemApi", client =>
 {
     var baseUrl = builder.Configuration["ApiBaseUrl"] ?? "http://localhost:8080";
     client.BaseAddress = new Uri(baseUrl);
-});
+})
+// Sem isto o HttpClient guardaria o cookie do login que a API devolve e o mandaria nas chamadas
+// de todos os usuários do site. O token de cada motorista vai só no cabeçalho Authorization.
+.ConfigurePrimaryHttpMessageHandler(() => new SocketsHttpHandler { UseCookies = false });
 
 // Add services to the container.
 builder.Services.AddRazorComponents()

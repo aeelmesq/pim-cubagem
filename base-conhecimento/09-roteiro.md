@@ -21,14 +21,15 @@ Ordem sugerida até a postagem (26/10 a 14/11/2026). Primeiro o que faz o sistem
 
 ## Etapa 3 — Carregamento e edição (até ~26/10)
 
-- [ ] Entidade `Load` entre caminhão e itens.
+- [x] Histórico de cargas: `Load` e `LoadItem` gravados ao registrar a saída do caminhão (página `/historico`).
 - [ ] Endpoints de edição (PUT) de caminhão e item.
 - [ ] Telas de edição na web e no app.
 
 ## Etapa 4 — Segurança (até ~02/11)
 
+- [x] Login do motorista (JWT em cookie HttpOnly, senha com hash) e área `/minha-carga`.
 - [ ] Login com perfis Admin e Operador.
-- [ ] Rotas da API protegidas por token.
+- [ ] Rotas de cadastro da API protegidas por token (hoje só `/api/me`).
 - [ ] Texto curto de privacidade (quais dados guarda e por quê).
 
 ## Etapa 5 — Entrega (até ~10/11, com folga antes de 14/11)

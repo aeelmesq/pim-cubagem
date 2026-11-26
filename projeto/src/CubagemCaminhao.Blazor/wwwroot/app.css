@@ -1,3 +1,16 @@
+.load-history-item > summary {
+    cursor: pointer;
+    list-style: none;
+}
+
+.load-history-item > summary::-webkit-details-marker {
+    display: none;
+}
+
+.load-history-item[open] > summary {
+    margin-bottom: 0.5rem;
+}
+
 html, body {
     font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif;
 }

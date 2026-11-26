@@ -32,7 +32,7 @@ scp -q deploy/nginx/default.conf.template "$vps:$remote_dir/nginx/"
 # Na VPS vai só o hash da senha do site, nunca a senha.
 printf '%s:%s\n' "$BASIC_AUTH_USER" "$(openssl passwd -apr1 -stdin <<< "$BASIC_AUTH_PASSWORD")" \
   | ssh "$vps" "cat > $remote_dir/nginx/htpasswd"
-printf 'NGINX_HOST=%s\nDB_USER=%s\nDB_PASSWORD=%s\n' "$NGINX_HOST" "$DB_USER" "$DB_PASSWORD" \
+printf 'NGINX_HOST=%s\nDB_USER=%s\nDB_PASSWORD=%s\nJWT_KEY=%s\n' "$NGINX_HOST" "$DB_USER" "$DB_PASSWORD" "$JWT_KEY" \
   | ssh "$vps" "umask 077; cat > $remote_dir/.env"
 
 echo "== Subindo"

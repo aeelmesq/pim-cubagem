@@ -256,7 +256,7 @@ public static class TruckEndpoints
         Math.Round(item.WeightKg * item.Quantity, 2));
 
     // Os resultados não são gravados no banco: são calculados aqui a cada consulta.
-    private static TruckResponse ToResponse(Truck truck)
+    internal static TruckResponse ToResponse(Truck truck)
     {
         var truckVolumeM3 = CubageCalculator.GetVolumeM3(truck.LengthCm, truck.WidthCm, truck.HeightCm);
         var cargo = truck.CargoItems

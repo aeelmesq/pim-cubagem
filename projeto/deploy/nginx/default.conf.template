@@ -84,6 +84,42 @@ server {
         try_files $uri $uri/ /app/index.html;
     }
 
+    # Área do motorista: ele entra com o próprio login (JWT em cookie HttpOnly), sem a senha do site.
+    # São páginas comuns do Blazor (sem WebSocket), então os cabeçalhos do server bastam.
+    location ~ ^/(entrar|minha-carga)/?$ {
+        auth_basic off;
+        limit_req zone=site burst=60 nodelay;
+        proxy_pass $blazor_upstream;
+    }
+
+    # Arquivos que essas páginas carregam (CSS, script do Blazor, ícone). Não têm dado nenhum.
+    location ^~ /_framework/ {
+        auth_basic off;
+        limit_req zone=site burst=60 nodelay;
+        proxy_pass $blazor_upstream;
+    }
+
+    # Scripts que ficam junto dos componentes (ReconnectModal.razor.js).
+    location ~ ^/Components/.+\.js$ {
+        auth_basic off;
+        limit_req zone=site burst=60 nodelay;
+        proxy_pass $blazor_upstream;
+    }
+
+    location ^~ /lib/ {
+        auth_basic off;
+        limit_req zone=site burst=60 nodelay;
+        proxy_pass $blazor_upstream;
+    }
+
+    # app.css, CubagemCaminhao.Blazor.styles.css e favicon.png, com ou sem o hash no nome. Só na raiz:
+    # os arquivos do app em /app/ continuam pedindo a senha do site.
+    location ~ ^/[^/]+\.(css|png)$ {
+        auth_basic off;
+        limit_req zone=site burst=60 nodelay;
+        proxy_pass $blazor_upstream;
+    }
+
     # Blazor.
     location / {
         limit_req zone=site burst=60 nodelay;

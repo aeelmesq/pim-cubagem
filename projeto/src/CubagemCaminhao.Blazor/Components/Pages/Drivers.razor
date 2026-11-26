@@ -9,7 +9,8 @@
     <div>
         <h1 class="mb-1">Motoristas</h1>
         <p class="text-secondary mb-0">
-            O sistema guarda só o nome do motorista. CPF, CNH e telefone não são pedidos porque o sistema não precisa deles (LGPD).
+            O sistema guarda só o nome e o login do motorista (a senha fica só como hash). CPF, CNH e telefone não são pedidos porque o sistema não precisa deles (LGPD).
+            Com o usuário e a senha, o motorista entra na <a href="minha-carga">área do motorista</a>.
         </p>
     </div>
 
@@ -40,6 +41,20 @@
                             <label class="form-label">Nome</label>
                             <InputText @bind-Value="driverForm.Name" class="form-control" />
                             <ValidationMessage For="() => driverForm.Name" />
+                        </div>
+
+                        <div class="mb-3">
+                            <label class="form-label">Usuário (para entrar no sistema)</label>
+                            <InputText @bind-Value="driverForm.Username" class="form-control" autocomplete="off" />
+                            <div class="form-text">De 3 a 40 caracteres: letras sem acento, números, ponto, hífen ou sublinhado.</div>
+                            <ValidationMessage For="() => driverForm.Username" />
+                        </div>
+
+                        <div class="mb-3">
+                            <label class="form-label">Senha</label>
+                            <InputText type="password" @bind-Value="driverForm.Password" class="form-control" autocomplete="new-password" />
+                            <div class="form-text">Pelo menos 8 caracteres. Passe a senha ao motorista pessoalmente.</div>
+                            <ValidationMessage For="() => driverForm.Password" />
                         </div>
 
                         <button type="submit" class="btn btn-primary" disabled="@isSubmitting">
@@ -74,6 +89,7 @@
                             <thead>
                                 <tr>
                                     <th>Nome</th>
+                                    <th>Usuário</th>
                                     <th>Caminhão</th>
                                     <th></th>
                                 </tr>
@@ -83,13 +99,31 @@
                                 {
                                     <tr>
                                         <td>@driver.Name</td>
+                                        <td>@driver.Username</td>
                                         <td>@(driver.TruckPlate ?? "Sem caminhão")</td>
-                                        <td class="text-end">
+                                        <td class="text-end text-nowrap">
+                                            <button class="btn btn-link btn-sm p-0 me-3" @onclick="() => StartPasswordChange(driver)">
+                                                Trocar senha
+                                            </button>
                                             <button class="btn btn-link btn-sm text-danger p-0" @onclick="() => DeleteDriverAsync(driver)">
                                                 Excluir
                                             </button>
                                         </td>
                                     </tr>
+                                    @if (passwordDriverId == driver.Id)
+                                    {
+                                        <tr>
+                                            <td colspan="4">
+                                                <div class="d-flex flex-wrap gap-2 align-items-center">
+                                                    <label class="form-label mb-0" for="new-password">Nova senha de @driver.Name:</label>
+                                                    <input id="new-password" type="password" class="form-control form-control-sm w-auto"
+                                                           autocomplete="new-password" @bind="newPassword" />
+                                                    <button class="btn btn-primary btn-sm" disabled="@isSubmitting" @onclick="() => SavePasswordAsync(driver)">Salvar</button>
+                                                    <button class="btn btn-outline-secondary btn-sm" @onclick="CancelPasswordChange">Cancelar</button>
+                                                </div>
+                                            </td>
+                                        </tr>
+                                    }
                                 }
                             </tbody>
                         </table>
@@ -107,6 +141,10 @@
     private bool isSubmitting;
     private string? errorMessage;
     private string? successMessage;
+
+    // Motorista com o campo "nova senha" aberto na lista.
+    private int? passwordDriverId;
+    private string newPassword = string.Empty;
 
     protected override async Task OnInitializedAsync()
     {
@@ -144,11 +182,18 @@
         try
         {
             using var http = HttpClientFactory.CreateClient("CubagemApi");
-            var response = await http.PostAsJsonAsync("/api/drivers/", new { Name = driverForm.Name });
+            var response = await http.PostAsJsonAsync("/api/drivers/", new
+            {
+                driverForm.Name,
+                driverForm.Username,
+                driverForm.Password
+            });
             await ApiException.EnsureSuccessAsync(response);
 
             successMessage = $"Motorista {driverForm.Name} cadastrado.";
             driverForm.Name = string.Empty;
+            driverForm.Username = string.Empty;
+            driverForm.Password = string.Empty;
             await LoadDriversAsync();
         }
         catch (ApiException ex)
@@ -196,10 +241,61 @@
         }
     }
 
+    private void StartPasswordChange(DriverDto driver)
+    {
+        passwordDriverId = driver.Id;
+        newPassword = string.Empty;
+        errorMessage = null;
+        successMessage = null;
+    }
+
+    private void CancelPasswordChange()
+    {
+        passwordDriverId = null;
+        newPassword = string.Empty;
+    }
+
+    private async Task SavePasswordAsync(DriverDto driver)
+    {
+        isSubmitting = true;
+        errorMessage = null;
+        successMessage = null;
+
+        try
+        {
+            using var http = HttpClientFactory.CreateClient("CubagemApi");
+            var response = await http.PutAsJsonAsync($"/api/drivers/{driver.Id}/password", new { Password = newPassword });
+            await ApiException.EnsureSuccessAsync(response);
+
+            successMessage = $"Senha de {driver.Name} trocada.";
+            CancelPasswordChange();
+        }
+        catch (ApiException ex)
+        {
+            errorMessage = ex.Message;
+        }
+        catch (Exception)
+        {
+            errorMessage = ApiException.ConnectionError;
+        }
+        finally
+        {
+            isSubmitting = false;
+        }
+    }
+
     private sealed class DriverForm
     {
         [Required(ErrorMessage = "Informe o nome.")]
         [StringLength(120, ErrorMessage = "O nome pode ter até 120 caracteres.")]
         public string? Name { get; set; }
+
+        [Required(ErrorMessage = "Informe o usuário.")]
+        [RegularExpression("^[a-zA-Z0-9._-]{3,40}$", ErrorMessage = "Use de 3 a 40 caracteres: letras sem acento, números, ponto, hífen ou sublinhado.")]
+        public string? Username { get; set; }
+
+        [Required(ErrorMessage = "Informe a senha.")]
+        [StringLength(100, MinimumLength = 8, ErrorMessage = "A senha deve ter de 8 a 100 caracteres.")]
+        public string? Password { get; set; }
     }
 }

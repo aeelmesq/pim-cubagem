@@ -1,6 +1,6 @@
 # Modelo de dados
 
-Hoje são três tabelas. A sugestão é chegar a cinco, sem complicar.
+Hoje são cinco tabelas: três do cadastro e duas do histórico de cargas.
 
 ## Atual
 
@@ -8,6 +8,32 @@ Hoje são três tabelas. A sugestão é chegar a cinco, sem complicar.
 erDiagram
     Trucks ||--o{ CargoItems : tem
     Drivers |o--o| Trucks : dirige
+    Loads ||--|{ LoadItems : contem
+    Loads {
+        int Id PK
+        datetimeoffset DispatchedAt "hora da saída"
+        int TruckId "cópia, sem FK"
+        string TruckName "cópia"
+        string TruckPlate "cópia"
+        int DriverId "cópia, sem FK, opcional"
+        string DriverName "cópia"
+        decimal CargoVolumeM3
+        decimal OccupancyPercent
+        decimal TotalWeightKg
+        decimal CubedWeightKg
+        decimal FreightWeightKg
+        string Status "OK, Atenção, Excede"
+    }
+    LoadItems {
+        int Id PK
+        int LoadId FK
+        string Name
+        decimal LengthCm
+        decimal WidthCm
+        decimal HeightCm
+        decimal WeightKg "por unidade"
+        int Quantity
+    }
     Trucks {
         int Id PK
         string Name
@@ -21,6 +47,8 @@ erDiagram
     Drivers {
         int Id PK
         string Name
+        string Username "única, para o login"
+        string PasswordHash "hash PBKDF2, nunca a senha"
     }
     CargoItems {
         int Id PK
@@ -34,9 +62,11 @@ erDiagram
     }
 ```
 
-Motorista: só o nome (veja [Segurança e LGPD](07-seguranca-e-lgpd.md)). O caminhão tem no máximo um motorista e cada motorista fica em um caminhão só. Excluir o motorista deixa o caminhão sem motorista.
+Motorista: nome, usuário e hash da senha (veja [Segurança e LGPD](07-seguranca-e-lgpd.md)). O caminhão tem no máximo um motorista e cada motorista fica em um caminhão só. Excluir o motorista deixa o caminhão sem motorista.
 
-Problema: a carga fica presa direto no caminhão. Não dá para ter histórico ("o que o caminhão levou semana passada") nem planejar dois carregamentos para o mesmo veículo.
+`CargoItems` é a carga que está no caminhão agora. Ao registrar a saída, ela é copiada para `Loads`/`LoadItems` e apagada do caminhão. O histórico guarda **cópias** (placa, nomes, resultados do cálculo) e não chaves estrangeiras para `Trucks` e `Drivers`: assim ele continua igual ao que saiu, mesmo se o caminhão ou o motorista forem alterados ou excluídos depois. É o mesmo princípio de uma nota fiscal.
+
+Ainda não dá para planejar dois carregamentos para o mesmo veículo ao mesmo tempo: o modelo sugerido abaixo resolve isso.
 
 ## Sugerido
 

@@ -1,0 +1,153 @@
+@page "/minha-carga"
+@attribute [ExcludeFromInteractiveRouting]
+@using System.Net
+@using System.Net.Http.Headers
+@inject IHttpClientFactory HttpClientFactory
+@inject NavigationManager Navigation
+
+<PageTitle>Minha carga</PageTitle>
+
+<div class="d-flex flex-column gap-4">
+    @if (!string.IsNullOrWhiteSpace(errorMessage))
+    {
+        <div class="alert alert-danger" role="alert">@errorMessage</div>
+    }
+
+    @if (me is not null)
+    {
+        <div class="d-flex justify-content-between align-items-center flex-wrap gap-3">
+            <div>
+                <h1 class="mb-1">Olá, @me.Name</h1>
+                <p class="text-secondary mb-0">Usuário: @me.Username</p>
+            </div>
+            <form method="post" @formname="logout" @onsubmit="Logout">
+                <AntiforgeryToken />
+                <button type="submit" class="btn btn-outline-secondary">Sair</button>
+            </form>
+        </div>
+
+        <div class="card shadow-sm border-0">
+            <div class="card-body">
+                <h2 class="h5 mb-3">Meu caminhão</h2>
+
+                @if (me.Truck is null)
+                {
+                    <div class="text-secondary">Você ainda não está em nenhum caminhão. Fale com a empresa.</div>
+                }
+                else
+                {
+                    var truck = me.Truck;
+                    <div class="d-flex justify-content-between align-items-center flex-wrap gap-2 mb-3">
+                        <div>
+                            <strong>@truck.Name</strong>
+                            <span class="text-muted ms-2">@truck.Plate</span>
+                        </div>
+                        <span class="badge @StatusStyle.BadgeClass(truck.Status)">
+                            @truck.Status · @truck.OccupancyPercent.ToString("0.0")% ocupado
+                        </span>
+                    </div>
+
+                    <div class="row g-3 mb-3">
+                        <div class="col-md-4">
+                            <div class="small text-muted">Volume da carga / do baú</div>
+                            <div>@truck.CargoVolumeM3.ToString("0.###") / @truck.TruckVolumeM3.ToString("0.###") m³</div>
+                        </div>
+                        <div class="col-md-4">
+                            <div class="small text-muted">Peso da carga / capacidade</div>
+                            <div>@truck.TotalWeightKg.ToString("N0") / @truck.MaxLoadKg.ToString("N0") kg</div>
+                        </div>
+                        <div class="col-md-4">
+                            <div class="small text-muted">Peso para frete</div>
+                            <div>@truck.FreightWeightKg.ToString("N0") kg</div>
+                        </div>
+                    </div>
+
+                    @if (truck.CargoItems.Any())
+                    {
+                        <div class="table-responsive">
+                            <table class="table table-sm align-middle mb-0">
+                                <thead>
+                                    <tr><th>Item</th><th>Dimensões</th><th>Qtd.</th><th>Volume</th><th>Peso</th></tr>
+                                </thead>
+                                <tbody>
+                                    @foreach (var cargo in truck.CargoItems)
+                                    {
+                                        <tr>
+                                            <td>@cargo.Name</td>
+                                            <td>@cargo.LengthCm x @cargo.WidthCm x @cargo.HeightCm cm</td>
+                                            <td>@cargo.Quantity</td>
+                                            <td>@cargo.TotalVolumeM3.ToString("0.###") m³</td>
+                                            <td>@cargo.TotalWeightKg.ToString("N0") kg</td>
+                                        </tr>
+                                    }
+                                </tbody>
+                            </table>
+                        </div>
+                    }
+                    else
+                    {
+                        <div class="text-secondary">O caminhão está sem carga no momento.</div>
+                    }
+                }
+            </div>
+        </div>
+
+        <div class="card shadow-sm border-0">
+            <div class="card-body">
+                <h2 class="h5 mb-3">Minhas cargas anteriores</h2>
+                <LoadHistoryList Loads="me.Loads" ShowDriver="false" />
+            </div>
+        </div>
+    }
+</div>
+
+@code {
+    [CascadingParameter]
+    private HttpContext HttpContext { get; set; } = default!;
+
+    private MeDto? me;
+    private string? errorMessage;
+
+    protected override async Task OnInitializedAsync()
+    {
+        if (!HttpContext.Request.Cookies.TryGetValue(DriverSession.CookieName, out var token))
+        {
+            Navigation.NavigateTo("entrar");
+            return;
+        }
+
+        try
+        {
+            using var http = HttpClientFactory.CreateClient("CubagemApi");
+            using var request = new HttpRequestMessage(HttpMethod.Get, "/api/me");
+            request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", token);
+
+            using var response = await http.SendAsync(request);
+            if (response.StatusCode is HttpStatusCode.Unauthorized or HttpStatusCode.Forbidden)
+            {
+                // Token vencido ou motorista excluído: apaga o cookie e pede login de novo.
+                HttpContext.Response.Cookies.Delete(DriverSession.CookieName, DriverSession.CreateCookieOptions(HttpContext));
+                Navigation.NavigateTo("entrar");
+                return;
+            }
+
+            await ApiException.EnsureSuccessAsync(response);
+            me = await response.Content.ReadFromJsonAsync<MeDto>();
+        }
+        catch (ApiException ex)
+        {
+            errorMessage = ex.Message;
+        }
+        catch (Exception)
+        {
+            errorMessage = ApiException.ConnectionError;
+        }
+    }
+
+    private void Logout()
+    {
+        // O JWT não fica guardado no servidor: sair é apagar o cookie.
+        HttpContext.Response.Cookies.Delete(DriverSession.CookieName, DriverSession.CreateCookieOptions(HttpContext));
+        Navigation.NavigateTo("entrar");
+    }
+}

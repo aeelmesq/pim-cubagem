@@ -1,0 +1,78 @@
+@* Lista do histórico de cargas. Usa <details> para abrir os itens, então funciona sem JavaScript
+   (na área do motorista, que não é interativa) e também nas páginas interativas. *@
+
+@if (!Loads.Any())
+{
+    <div class="text-secondary">Nenhuma carga registrada ainda.</div>
+}
+else
+{
+    <div class="list-group">
+        @foreach (var load in Loads)
+        {
+            <details class="list-group-item load-history-item">
+                <summary class="d-flex justify-content-between align-items-center flex-wrap gap-2">
+                    <span>
+                        <strong>@load.DispatchedAtText</strong>
+                        <span class="text-muted ms-2">
+                            @load.TruckPlate (@load.TruckName)
+                            @if (ShowDriver)
+                            {
+                                <text> · @(load.DriverName ?? "sem motorista")</text>
+                            }
+                            · @load.Items.Sum(item => item.Quantity) volumes
+                        </span>
+                    </span>
+                    <span class="badge @StatusStyle.BadgeClass(load.Status)">
+                        @load.Status · @load.OccupancyPercent.ToString("0.0")% ocupado
+                    </span>
+                </summary>
+
+                <div class="row g-3 my-2">
+                    <div class="col-md-4">
+                        <div class="small text-muted">Volume da carga / do baú</div>
+                        <div>@load.CargoVolumeM3.ToString("0.###") / @load.TruckVolumeM3.ToString("0.###") m³</div>
+                    </div>
+                    <div class="col-md-4">
+                        <div class="small text-muted">Peso da carga / capacidade</div>
+                        <div>@load.TotalWeightKg.ToString("N0") / @load.MaxLoadKg.ToString("N0") kg</div>
+                    </div>
+                    <div class="col-md-4">
+                        <div class="small text-muted">Peso para frete</div>
+                        <div>@load.FreightWeightKg.ToString("N0") kg</div>
+                        <div class="small text-muted">Peso cubado: @load.CubedWeightKg.ToString("N0") kg</div>
+                    </div>
+                </div>
+
+                <div class="table-responsive">
+                    <table class="table table-sm align-middle mb-1">
+                        <thead>
+                            <tr><th>Item</th><th>Dimensões</th><th>Qtd.</th><th>Volume</th><th>Peso</th></tr>
+                        </thead>
+                        <tbody>
+                            @foreach (var item in load.Items)
+                            {
+                                <tr>
+                                    <td>@item.Name</td>
+                                    <td>@item.LengthCm x @item.WidthCm x @item.HeightCm cm</td>
+                                    <td>@item.Quantity</td>
+                                    <td>@item.TotalVolumeM3.ToString("0.###") m³</td>
+                                    <td>@item.TotalWeightKg.ToString("N0") kg (@item.WeightKg.ToString("0.###") kg/un.)</td>
+                                </tr>
+                            }
+                        </tbody>
+                    </table>
+                </div>
+            </details>
+        }
+    </div>
+}
+
+@code {
+    [Parameter, EditorRequired]
+    public IReadOnlyList<LoadDto> Loads { get; set; } = [];
+
+    // Na área do motorista o nome dele não precisa aparecer em cada linha.
+    [Parameter]
+    public bool ShowDriver { get; set; } = true;
+}

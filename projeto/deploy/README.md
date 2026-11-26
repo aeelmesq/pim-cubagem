@@ -22,6 +22,12 @@ cd projeto
 
 Monta as imagens e o app web aqui, envia prontos para a VPS e sobe. A VPS não precisa do código.
 
+O `deploy/.env` precisa ter `JWT_KEY` (chave do login dos motoristas, veja o `.env.example`). Sem ela a API não sobe.
+
+**Versão com login e histórico de cargas:** ela tem tabelas novas (`Loads`, `LoadItems`) e campos novos em `Drivers`
+(usuário e hash da senha). Como a API usa `EnsureCreatedAsync()`, o banco antigo não é atualizado: no PC, rode
+`docker compose down -v` e `docker compose up -d` (perde os dados), depois `./deploy/criar-usuario-banco.sh` de novo, e só então publique.
+
 ## Primeira vez neste PC
 
 ```bash
@@ -50,7 +56,12 @@ Feito como root, com acesso por chave SSH:
 ## Segurança
 
 - HTTPS obrigatório (HTTP redireciona), com cabeçalhos HSTS, `nosniff` e `X-Frame-Options`.
-- Site, app e API pedem senha (Basic Auth do nginx), porque o sistema não tem login.
+- Site, app e API pedem senha (Basic Auth do nginx), porque as telas de cadastro ainda não têm login.
+- A área do motorista é a exceção: `/entrar`, `/minha-carga` e os arquivos que elas carregam (`/_framework/`, `/lib/`,
+  os `.css`/`.png` da raiz e os `.js` de `/Components/`) não pedem a senha do site. O motorista entra só com o próprio usuário e senha.
+  Se ele clicar num link do menu para as telas de cadastro, o navegador pede a senha do site.
+- O nginx apaga o cabeçalho `Authorization` antes de chegar na API, então quem chama `/api` pelo navegador
+  se autentica pelo cookie HttpOnly `cubagem_token` (o Blazor fala com a API direto pela rede do Docker e manda o token no cabeçalho).
 - Limite de 10 requisições por segundo por IP na API (o excesso recebe 429).
 - O banco não tem porta aberta na internet: só os containers da VPS alcançam o túnel.
 - Quem acessa pelo IP, sem o nome, não recebe nada.

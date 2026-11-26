@@ -61,6 +61,22 @@ docker compose down -v
 docker compose up --build
 ```
 
+### Login do motorista e histórico de cargas
+
+1. Em **Motoristas** (`/motoristas`), cadastre o motorista com nome, usuário e senha (mínimo 8 caracteres). Coloque-o num caminhão em **Caminhões**.
+2. O motorista entra em `/entrar` e vê, em `/minha-carga`, o caminhão dele com a carga atual e o histórico das cargas que já levou.
+3. No **Início**, o botão **Registrar saída** grava a carga atual do caminhão no histórico (com placa, motorista, itens e resultados do cálculo daquele momento) e deixa o caminhão vazio para o próximo carregamento. Todas as saídas ficam em **Histórico de cargas** (`/historico`).
+
+Como o login funciona:
+
+- A senha é guardada só como hash (PBKDF2 com salt, `PasswordHasher` do ASP.NET Core). Nem o banco tem a senha.
+- `POST /api/auth/login` confere usuário e senha e devolve um JWT (vale 8 horas) num cookie `cubagem_token` **HttpOnly**, `SameSite=Strict` e `Secure` em HTTPS. São no máximo 10 tentativas por minuto por IP.
+- `GET /api/me` exige o token (cookie ou `Authorization: Bearer`) e devolve só os dados do motorista logado.
+- O Blazor chama a API pelo servidor: ele recebe o token, guarda no cookie HttpOnly do site e manda no cabeçalho nas chamadas a `/api/me`. Sair apaga o cookie.
+- A chave que assina o JWT fica em `Jwt:Key`. Em desenvolvimento ela já está no `appsettings.Development.json` da API; em produção vem da variável `JWT_KEY` (veja [deploy/README.md](deploy/README.md)).
+
+As telas de cadastro (caminhões, motoristas, histórico) continuam sem login, como antes: o login é só da área do motorista.
+
 ### Aplicativo mobile
 
 Com o SQL Server e a API iniciados pelo Docker Compose, execute:

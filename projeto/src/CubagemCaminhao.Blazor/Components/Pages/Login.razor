@@ -1,0 +1,125 @@
+@page "/entrar"
+@attribute [ExcludeFromInteractiveRouting]
+@using System.ComponentModel.DataAnnotations
+@inject IHttpClientFactory HttpClientFactory
+@inject NavigationManager Navigation
+
+<PageTitle>Entrar</PageTitle>
+
+<div class="row justify-content-center">
+    <div class="col-md-7 col-lg-5">
+        <div class="card shadow-sm border-0">
+            <div class="card-body">
+                <h1 class="h4 mb-1">Área do motorista</h1>
+                <p class="text-secondary">Entre com o usuário e a senha que a empresa cadastrou para você.</p>
+
+                @if (!string.IsNullOrWhiteSpace(errorMessage))
+                {
+                    <div class="alert alert-danger" role="alert">@errorMessage</div>
+                }
+
+                <EditForm Model="Input" FormName="login" method="post" OnValidSubmit="LoginAsync">
+                    <DataAnnotationsValidator />
+
+                    <div class="mb-3">
+                        <label class="form-label" for="username">Usuário</label>
+                        <InputText id="username" @bind-Value="Input.Username" class="form-control" autocomplete="username" />
+                        <ValidationMessage For="() => Input.Username" />
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label" for="password">Senha</label>
+                        <InputText id="password" type="password" @bind-Value="Input.Password" class="form-control" autocomplete="current-password" />
+                        <ValidationMessage For="() => Input.Password" />
+                    </div>
+
+                    <button type="submit" class="btn btn-primary w-100">Entrar</button>
+                </EditForm>
+            </div>
+        </div>
+    </div>
+</div>
+
+@code {
+    [CascadingParameter]
+    private HttpContext HttpContext { get; set; } = default!;
+
+    [SupplyParameterFromForm]
+    private LoginForm Input { get; set; } = default!;
+
+    private string? errorMessage;
+
+    protected override void OnInitialized()
+    {
+        Input ??= new LoginForm();
+
+        // Já está logado: vai direto para a área do motorista.
+        if (HttpMethods.IsGet(HttpContext.Request.Method)
+            && HttpContext.Request.Cookies.ContainsKey(DriverSession.CookieName))
+        {
+            Navigation.NavigateTo("minha-carga");
+        }
+    }
+
+    private async Task LoginAsync()
+    {
+        LoginResponseDto? login;
+        try
+        {
+            using var http = HttpClientFactory.CreateClient("CubagemApi");
+            using var request = new HttpRequestMessage(HttpMethod.Post, "/api/auth/login")
+            {
+                Content = JsonContent.Create(new { Input.Username, Input.Password })
+            };
+
+            // A API limita as tentativas de login por IP. Sem isto, todo mundo pareceria vir do IP do Blazor.
+            var clientIp = HttpContext.Connection.RemoteIpAddress?.ToString();
+            if (clientIp is not null)
+            {
+                request.Headers.Add("X-Forwarded-For", clientIp);
+            }
+
+            using var response = await http.SendAsync(request);
+            if (response.StatusCode == System.Net.HttpStatusCode.TooManyRequests)
+            {
+                errorMessage = "Muitas tentativas de login. Espere um minuto e tente de novo.";
+                return;
+            }
+
+            await ApiException.EnsureSuccessAsync(response);
+            login = await response.Content.ReadFromJsonAsync<LoginResponseDto>();
+        }
+        catch (ApiException ex)
+        {
+            errorMessage = ex.Message;
+            return;
+        }
+        catch (Exception)
+        {
+            errorMessage = ApiException.ConnectionError;
+            return;
+        }
+
+        if (login is null || string.IsNullOrEmpty(login.Token))
+        {
+            errorMessage = "A API não devolveu o login.";
+            return;
+        }
+
+        HttpContext.Response.Cookies.Append(
+            DriverSession.CookieName,
+            login.Token,
+            DriverSession.CreateCookieOptions(HttpContext, login.ExpiresAt));
+
+        Navigation.NavigateTo("minha-carga");
+    }
+
+    private sealed class LoginForm
+    {
+        [Required(ErrorMessage = "Informe o usuário.")]
+        public string? Username { get; set; }
+
+        [Required(ErrorMessage = "Informe a senha.")]
+        public string? Password { get; set; }
+    }
+}

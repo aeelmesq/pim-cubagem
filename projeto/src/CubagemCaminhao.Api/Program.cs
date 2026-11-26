@@ -2,6 +2,7 @@ using System.Globalization;
 
 using Microsoft.EntityFrameworkCore;
 using CubagemCaminhao.Infrastructure.Data;
+using CubagemCaminhao.Api.Auth;
 using CubagemCaminhao.Api.Endpoints;
 
 namespace CubagemCaminhao.Api;
@@ -39,7 +40,10 @@ public class Program
                     return allowedOrigins.Contains(origin, StringComparer.OrdinalIgnoreCase);
                 })
                 .AllowAnyHeader()
-                .AllowAnyMethod()));
+                .AllowAnyMethod()
+                // Deixa o navegador mandar o cookie do login (só para as origens permitidas acima).
+                .AllowCredentials()));
+        builder.AddDriverAuthentication();
         builder.Services.AddDbContext<CubagemDbContext>(options =>
             options.UseSqlServer(
                 builder.Configuration.GetConnectionString("DefaultConnection")
@@ -54,6 +58,9 @@ public class Program
         }
 
         app.UseCors("ClientApplications");
+        app.UseAuthentication();
+        app.UseAuthorization();
+        app.UseRateLimiter();
 
         if (app.Environment.IsDevelopment())
         {
@@ -63,6 +70,8 @@ public class Program
         app.MapHealthChecks("/health");
         app.MapTruckEndpoints();
         app.MapDriverEndpoints();
+        app.MapLoadEndpoints();
+        app.MapAuthEndpoints();
         app.MapGet("/api/status", () => new
         {
             application = "CubagemCaminhao.Api",
